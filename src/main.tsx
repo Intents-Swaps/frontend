@@ -6,14 +6,17 @@ import { LanguageProvider } from '@/context/language-provider'
 import { WalletProvider } from '@/context/wallet-provider'
 import { Toaster } from './components/ui/sonner'
 import './index.css'
+import { SolanaWalletProvider } from '@/context/SolanaWalletProvider'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
             <LanguageProvider>
                 <WalletProvider>
-                    <App />
-                    <Toaster />
+                    <SolanaWalletProvider>
+                        <App />
+                        <Toaster />
+                    </SolanaWalletProvider>
                 </WalletProvider>
             </LanguageProvider>
         </ThemeProvider>

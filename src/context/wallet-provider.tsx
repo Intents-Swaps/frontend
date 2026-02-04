@@ -25,27 +25,51 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const [network, setNetwork] = useState<NetworkInfo | undefined>();
     const [wallet, setWallet] = useState<AptosWallet | undefined>();
 
-    // Initialize wallet detection with retries
+    // Initialize wallet detection and auto-connect
     useEffect(() => {
-        const detectWallet = async () => {
-            // Wait for wallet to be injected (with retries)
-            const detectedWallet = await waitForWallet(15, 200); // 15 retries x 200ms = 3 seconds max
+        const detectAndConnect = async () => {
+            // 1. Wait for wallets to be injected
+            const detectedWallet = await waitForWallet(15, 200);
             if (detectedWallet) {
                 setWallet(detectedWallet);
                 console.log('Wallet detected:', detectedWallet.name);
+
+                // 2. Check for persisted session
+                const savedWalletName = localStorage.getItem('movement_wallet_name');
+                if (savedWalletName && detectedWallet.name === savedWalletName) {
+                    console.log('Auto-connecting to saved wallet:', savedWalletName);
+
+                    // Attempt silent connection
+                    try {
+                        const response = await connectWallet(detectedWallet);
+                        if (response.status === UserResponseStatus.APPROVED) {
+                            setAccount(response.args);
+                            setConnected(true);
+
+                            // Load network
+                            const networkInfo = await getWalletNetwork(detectedWallet);
+                            if (networkInfo) setNetwork(networkInfo);
+
+                            toast.success(`Reconnected to ${detectedWallet.name}`);
+                        }
+                    } catch (e) {
+                        console.error('Auto-connect failed', e);
+                        localStorage.removeItem('movement_wallet_name'); // Clear stale session
+                    }
+                }
+
             } else {
                 console.log('No wallet detected after retries');
             }
         };
 
-        detectWallet();
+        detectAndConnect();
     }, []);
 
     const connect = useCallback(async () => {
         let currentWallet = wallet;
 
         if (!currentWallet) {
-            // Try to detect wallet again with retries
             toast.info('Detecting wallet...');
             currentWallet = await waitForWallet(10, 200);
             if (currentWallet) {
@@ -63,6 +87,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             if (response.status === UserResponseStatus.APPROVED) {
                 setAccount(response.args);
                 setConnected(true);
+
+                // Persist session
+                localStorage.setItem('movement_wallet_name', currentWallet.name);
 
                 const networkInfo = await getWalletNetwork(currentWallet);
                 if (networkInfo) {
@@ -111,6 +138,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
             setAccount(undefined);
             setConnected(false);
             setNetwork(undefined);
+
+            // Clear session
+            localStorage.removeItem('movement_wallet_name');
+
             toast.success('Wallet disconnected');
         } catch (error) {
             console.error('Disconnect failed:', error);

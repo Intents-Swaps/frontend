@@ -107,7 +107,14 @@ export const signAndSubmitTransaction = async (wallet: AptosWallet, payload: any
     // or sometimes just the payload itself. The error 'serialize of undefined' suggests 
     // it might be looking for a property that doesn't exist on the passed object.
     // Let's try wrapping it, as this is a common variance.
-    return signFeature.signAndSubmitTransaction({ payload } as any);
+    // Try passing payload directly first (standard behavior)
+    try {
+        return await signFeature.signAndSubmitTransaction(payload);
+    } catch (e) {
+        console.warn("Direct signAndSubmitTransaction failed, trying with payload wrapper:", e);
+        // Fallback: standard aptos:signAndSubmitTransaction sometimes requires { payload: ... }
+        return await signFeature.signAndSubmitTransaction({ payload } as any);
+    }
 };
 
 export const signMessage = async (wallet: AptosWallet, message: any): Promise<any> => {

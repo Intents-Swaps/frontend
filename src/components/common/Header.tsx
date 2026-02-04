@@ -25,6 +25,8 @@ export function Header() {
 
     const navItems = [
         { name: 'Swap', path: '/swap' },
+        { name: 'Cross Orders', path: '/crossorders' },
+        { name: 'Rules', path: '/crossswap' }, // Renamed from Cross Swap to avoid confusion, or keep as is. User asked for "Cross Orders" link.
         { name: 'Pro', path: '/pro' },
         { name: 'Oracle', path: '/oracle' },
         { name: 'Resolver', path: '/resolver' },

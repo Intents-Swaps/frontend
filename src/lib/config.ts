@@ -1,8 +1,16 @@
 export const INTENT_SWAP_ADDRESS = "0xbd128d4f1dbb87783658bed4a4046f3811015952110f321863c34f161eb07611";
-export const RELAYER_URL = import.meta.env.VITE_RELAYER_URL || "https://jubilant-nourishment-production.up.railway.app";
-export const MOVEMENT_TESTNET_CHAIN_ID = 250; // Bardock Testnet? Adjust if needed
+export const SOLANA_PROGRAM_ID = "5JAWumq5L4B8WrpF3CFox36SZ2bJF4xQvskLksmHRgs2";
+export const INTENT_RELAYER_URL = "http://localhost:3001";
+export const CROSS_CHAIN_RELAYER_URL = "http://localhost:3003";
+export const SOLANA_RPC_URL = "https://devnet.helius-rpc.com/?api-key=7ceb6609-616a-4e84-ba92-5ee3d04eb5e7";
+
+// Chain IDs
+export const MOVEMENT_TESTNET_CHAIN_ID = 250;
+export const SOLANA_DEVNET_CHAIN_ID = 103; // Approximate/Custom
+
 // Token addresses for testing
 export const TOKENS = {
     MOVE: "0x1::aptos_coin::AptosCoin",
-    USDC: "0x1::aptos_coin::AptosCoin" // Using AptosCoin for testnet verification
+    USDC: "0x45142fb00dde90b950183d8ac2815597892f665c254c3f42b5768bc6ae4c8489", // Using deployed FA or AptosCoin
+    SOL: "11111111111111111111111111111111"
 };

@@ -4,12 +4,18 @@ import { PriceData } from "@/types";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, ArrowDownRight, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const ASSETS = [
-    { symbol: "MOVE", name: "Movement Coin", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png" },
-    { symbol: "ETH", name: "WETH.e", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/WETH.png" },
-    { symbol: "USDC", name: "USDC.e", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDC.png" },
-    { symbol: "USDT", name: "USDT.e", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDT.png" }
+    // Movement Chain
+    { symbol: "MOVE", name: "Movement Coin", chain: "Movement", priceKey: "MOVE", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png" },
+    { symbol: "USDC.e", name: "Bridged USDC", chain: "Movement", priceKey: "USDC.e", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDC.png" },
+    { symbol: "USDT.e", name: "Bridged USDT", chain: "Movement", priceKey: "USDT.e", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDT.png" },
+
+    // Solana Chain
+    { symbol: "SOL", name: "Solana", chain: "Solana", priceKey: "SOL", icon: "/assets/solanaLogo.png" },
+    { symbol: "USDC", name: "USD Coin", chain: "Solana", priceKey: "USDC", icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png" },
+    { symbol: "USDT", name: "Tether", chain: "Solana", priceKey: "USDT", icon: "https://cryptologos.cc/logos/tether-usdt-logo.png" },
 ];
 
 export function OraclePage() {
@@ -52,7 +58,7 @@ export function OraclePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {ASSETS.map((asset) => {
-                    const priceData = prices[asset.symbol];
+                    const priceData = prices[asset.priceKey];
                     const price = PriceService.formatPrice(priceData);
                     // Mock change for demo since Pyth Hermes Latest doesn't give 24h change directly without historical query
                     const change = (Math.random() * 5) * (Math.random() > 0.5 ? 1 : -1);
@@ -69,6 +75,9 @@ export function OraclePage() {
                                         <p className="text-xs text-muted-foreground">{asset.name}</p>
                                     </div>
                                 </div>
+                                <Badge variant={asset.chain === 'Movement' ? 'default' : 'secondary'} className={asset.chain === 'Solana' ? 'bg-indigo-500 hover:bg-indigo-600 text-white' : 'bg-primary'}>
+                                    {asset.chain}
+                                </Badge>
                             </div>
 
                             <div className="space-y-1">
