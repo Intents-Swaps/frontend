@@ -1,14 +1,16 @@
 
+import { CROSS_CHAIN_RELAYER_URL } from '../lib/config';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/wallet-provider'; // Aptos
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react'; // Solana
 import { Button } from '@/components/ui/button';
-import { ArrowRight, ExternalLink, RefreshCw, CheckCircle, Clock, Link as LinkIcon, LogOut, ArrowLeftRight } from 'lucide-react';
+import { ArrowRight, ExternalLink, RefreshCw, CheckCircle, Clock, Link as LinkIcon, LogOut, ArrowLeftRight, Coins } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { signAndSubmitTransaction } from "@/lib/wallet/adapter";
+import { useCrossChain } from "@/context/CrossChainContext";
 
 
 interface CrossChainIntent {
@@ -32,6 +34,7 @@ interface CrossChainIntent {
 export default function CrossOrders() {
     const { connected: aptosConnected, account: aptosAccount, wallet: aptosWallet, connect: connectAptos, disconnect: disconnectAptos } = useWallet();
     const { connected: solanaConnected, publicKey: solanaPublicKey, connect: connectSolana, disconnect: disconnectSolana, select: selectSolanaWallet, wallets: solanaWallets } = useSolanaWallet();
+    const { unwrapWSOL } = useCrossChain();
 
     const [orders, setOrders] = useState<CrossChainIntent[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +53,7 @@ export default function CrossOrders() {
     const loadOrders = async () => {
         setIsLoading(true);
         try {
-            const res = await axios.get('http://localhost:3003/orders');
+            const res = await axios.get(`${CROSS_CHAIN_RELAYER_URL}/orders`);
             const { active, completed } = res.data;
             const allOrders: CrossChainIntent[] = [...active, ...completed];
 
@@ -77,7 +80,7 @@ export default function CrossOrders() {
     const checkRelayerHealth = async () => {
         setIsHealthLoading(true);
         try {
-            const res = await fetch('http://localhost:3003/health').catch(() => ({ ok: false, json: async () => ({}) }));
+            const res = await fetch(`${CROSS_CHAIN_RELAYER_URL}/health`).catch(() => ({ ok: false, json: async () => ({}) }));
             const data = await (res as any).json();
 
             setRelayerHealth({
@@ -129,12 +132,24 @@ export default function CrossOrders() {
                 // MOVE -> SOL: User needs to Reveal Secret to Relayer to get paid (Trusted Mode)
                 toast.info("Revealing secret to Relayer...");
 
-                await axios.post(`http://localhost:3003/reveal-secret`, {
-                    intentId: order.id,
-                    secret: secret
-                });
+                try {
+                    await axios.post(`${CROSS_CHAIN_RELAYER_URL}/reveal-secret`, {
+                        intentId: order.id,
+                        secret: secret
+                    });
+                    toast.success("Secret Revealed! Funds should arrive in your Solana wallet shortly.");
+                } catch (revealError: any) {
+                    const errorMsg = revealError.response?.data?.error || revealError.message;
+                    if (errorMsg.includes('not found')) {
+                        toast.error("Order not found on relayer", {
+                            description: "This order may have expired or the relayer was restarted. Please contact support with your order ID."
+                        });
+                    } else {
+                        toast.error("Failed to reveal secret", { description: errorMsg });
+                    }
+                    throw new Error(errorMsg);
+                }
 
-                toast.success("Secret Revealed! Funds should arrive in your Solana wallet shortly.");
 
             } else {
                 // SOL -> MOVE: User claims on Movement Chain
@@ -174,7 +189,7 @@ export default function CrossOrders() {
                 toast.success("Claimed Successfully on Movement!");
 
                 // Notify Relayer
-                await axios.post(`http://localhost:3003/reveal-secret`, {
+                await axios.post(`${CROSS_CHAIN_RELAYER_URL}/reveal-secret`, {
                     intentId: order.id,
                     secret: secret
                 });
@@ -184,7 +199,20 @@ export default function CrossOrders() {
 
         } catch (e: any) {
             console.error(e);
-            toast.error("Claim Failed", { description: e.message });
+            const errorMsg = e.message || 'Unknown error';
+
+            // Check for specific Move abort errors
+            if (errorMsg.includes('EESCROW_NOT_FOUND') || errorMsg.includes('Escrow ID not found')) {
+                toast.error("Escrow Not Found", {
+                    description: "This order's escrow was never created or has already been claimed/refunded. The relayer may have restarted during the swap process."
+                });
+            } else if (errorMsg.includes('Intent') && errorMsg.includes('not found')) {
+                toast.error("Order Not Found", {
+                    description: "This order may have expired or the relayer was restarted. Please contact support."
+                });
+            } else {
+                toast.error("Claim Failed", { description: errorMsg });
+            }
         }
     };
 
@@ -215,6 +243,10 @@ export default function CrossOrders() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" onClick={unwrapWSOL} className="border-yellow-500/30 text-yellow-500 hover:text-yellow-400 hover:bg-yellow-500/10">
+                        <Coins className="mr-2 h-4 w-4" />
+                        Unwrap WSOL
+                    </Button>
                     <Button variant="outline" onClick={loadOrders} disabled={isLoading}>
                         <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                         Refresh

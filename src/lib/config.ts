@@ -1,7 +1,7 @@
 export const INTENT_SWAP_ADDRESS = "0xbd128d4f1dbb87783658bed4a4046f3811015952110f321863c34f161eb07611";
 export const SOLANA_PROGRAM_ID = "5JAWumq5L4B8WrpF3CFox36SZ2bJF4xQvskLksmHRgs2";
-export const INTENT_RELAYER_URL = "http://localhost:3001";
-export const CROSS_CHAIN_RELAYER_URL = "http://localhost:3003";
+export const INTENT_RELAYER_URL = import.meta.env.VITE_RELAYER_URL || "http://localhost:3001";
+export const CROSS_CHAIN_RELAYER_URL = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || "https://cross-chain-relayer-production.up.railway.app";
 export const SOLANA_RPC_URL = "https://devnet.helius-rpc.com/?api-key=7ceb6609-616a-4e84-ba92-5ee3d04eb5e7";
 
 // Chain IDs

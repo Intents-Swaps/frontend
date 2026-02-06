@@ -106,14 +106,27 @@ export const signAndSubmitTransaction = async (wallet: AptosWallet, payload: any
     // standard aptos:signAndSubmitTransaction often requires { payload: ... } structure
     // or sometimes just the payload itself. The error 'serialize of undefined' suggests 
     // it might be looking for a property that doesn't exist on the passed object.
-    // Let's try wrapping it, as this is a common variance.
-    // Try passing payload directly first (standard behavior)
+
+    // Nightly and other standard wallets usually expect InputTransactionData
+    // But some implementation might be strict.
+
+    // Nightly and other standard wallets usually expect InputTransactionData wrapped in { payload }
+
+    console.log("=== [Adapter] signAndSubmitTransaction ===");
+    console.log("Payload to wrap:", JSON.stringify(payload, null, 2));
+
+    // Deep log arguments types to catch type mismatches (often cause of 400s)
+    if (payload.functionArguments) {
+        console.log("Args Types:", payload.functionArguments.map((arg: any) => typeof arg));
+    }
+
+
     try {
-        return await signFeature.signAndSubmitTransaction(payload);
-    } catch (e) {
-        console.warn("Direct signAndSubmitTransaction failed, trying with payload wrapper:", e);
-        // Fallback: standard aptos:signAndSubmitTransaction sometimes requires { payload: ... }
+        // Matches frontend-only implementation: Always wrap in { payload }
         return await signFeature.signAndSubmitTransaction({ payload } as any);
+    } catch (e: any) {
+        console.warn("Adapter signAndSubmitTransaction failed:", e);
+        throw e;
     }
 };
 

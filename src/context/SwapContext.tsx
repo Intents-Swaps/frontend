@@ -33,12 +33,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
 
     // Log connection info on mount
     useEffect(() => {
-        console.log("=== SwapContext Initialized ===");
-        console.log("Network URL:", DEFAULT_NETWORK.url);
-        console.log("Network Name:", DEFAULT_NETWORK.buttonName);
-        console.log("Chain ID:", DEFAULT_NETWORK.chainId);
-        console.log("Intent Swap Contract:", INTENT_SWAP_ADDRESS);
-        console.log("Relayer URL:", RELAYER_URL);
+        // console.log("=== SwapContext Initialized ===");
     }, []);
 
     const refreshBalance = async () => {
@@ -46,7 +41,6 @@ export function SwapProvider({ children }: { children: ReactNode }) {
             setEscrowBalance({});
             return;
         }
-        console.log("=== Fetching Escrow Balances ===");
         const newBalances: Record<string, number> = {};
 
         const { TOKENS } = await import('../components/intent-swap/forms/TokenSelector');
@@ -71,7 +65,6 @@ export function SwapProvider({ children }: { children: ReactNode }) {
                 const factor = Math.pow(10, token.decimals);
                 const bal = Number(balanceVal[0]) / factor;
                 newBalances[token.type] = bal;
-                console.log(`Balance for ${token.symbol}: ${bal}`);
             } catch (e) {
                 newBalances[token.type] = 0;
             }
@@ -103,18 +96,33 @@ export function SwapProvider({ children }: { children: ReactNode }) {
 
             const typeArguments = isFA ? [] : [tokenType];
             const functionArguments = isFA
-                ? [INTENT_SWAP_ADDRESS, rawAmount, tokenType] // registry_addr, amount, asset
-                : [rawAmount];
+                ? [INTENT_SWAP_ADDRESS, rawAmount.toString(), tokenType] // registry_addr, amount, asset
+                : [rawAmount.toString()];
 
+            // Fetch ledger info to ensure expiration is valid (User clock is 3h behind)
+            const ledgerInfo = await client.getLedgerInfo();
+            const chainTime = Math.floor(parseInt(ledgerInfo.ledger_timestamp) / 1000000);
+            const expireTimestamp = chainTime + 600; // 10 minutes from CHAIN time
+
+            // Matches frontend-only implementation - do NOT stringify, SDK expects native types
             const transactionData = {
                 function: functionName,
-                typeArguments,
-                functionArguments
+                typeArguments: typeArguments,
+                functionArguments: functionArguments,
+                options: {
+                    expireTimestamp: expireTimestamp
+                }
             };
+
             console.log("Transaction Data:", JSON.stringify(transactionData, null, 2));
+            console.log(`Using Chain Time: ${chainTime}, Expire: ${expireTimestamp}`);
 
             const response = await adapterSignTransaction(wallet, transactionData);
             console.log("Transaction Response:", JSON.stringify(response, null, 2));
+
+            if (response && response.status === "Rejected") {
+                throw new Error("Transaction rejected by user");
+            }
 
             // Robust hash extraction
             let txHash = "";
@@ -151,7 +159,9 @@ export function SwapProvider({ children }: { children: ReactNode }) {
     // Helper to persist orders
     const saveOrderLocally = (order: any) => {
         const saved = localStorage.getItem('intent_orders');
-        const orders = saved ? JSON.parse(saved) : [];
+        let orders = saved ? JSON.parse(saved) : [];
+        // Deduplicate: Remove existing order with same nonce/hash before adding
+        orders = orders.filter((o: any) => o.nonce !== order.nonce && o.order_hash !== order.order_hash);
         orders.push(order);
         localStorage.setItem('intent_orders', JSON.stringify(orders));
     };
