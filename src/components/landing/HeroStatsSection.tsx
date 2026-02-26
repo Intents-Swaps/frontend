@@ -96,7 +96,7 @@ export function HeroStatsSection() {
                                 <strong className="text-white">BCH Intents</strong> delivers every piece of the onchain economy in one platform.
                             </p>
                             <p>
-                                Get no-fees trading, proven security, and deep liquidity, all backed by crypto’s most trusted DEX.
+                                Get no-fees trading, proven security, and deep liquidity, all backed by a competitive network of professional resolvers.
                             </p>
                         </div>
 
