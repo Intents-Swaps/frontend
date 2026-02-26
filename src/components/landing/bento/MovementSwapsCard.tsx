@@ -91,7 +91,7 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
 
             {/* CTA and Feature Badges */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
-                <Link to="/swap">
+                <Link to="/trade">
                     <Button variant="outline" className="rounded-full gap-2 group border-pink-500/30 hover:border-pink-500/50 hover:bg-pink-500/5">
                         Try Intent Swap
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

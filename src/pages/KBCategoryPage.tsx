@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { KBArticleList } from '../components/knowledge-base/KBArticleList';
 import { kbService } from '../components/knowledge-base/kbService';
 import { ChevronRight, Home, LayoutGrid, List } from 'lucide-react';
+import { Footer } from '@/components/common/Footer';
 
 export function KBCategoryPage() {
     const { categoryId } = useParams();
@@ -62,6 +63,7 @@ export function KBCategoryPage() {
                     <KBArticleList categoryId={categoryId} />
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }

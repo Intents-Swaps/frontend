@@ -12,6 +12,7 @@
 import { KBHeader } from '../components/knowledge-base/KBHeader';
 import { KBCategoryList } from '../components/knowledge-base/KBCategoryList';
 import { KBArticleList } from '../components/knowledge-base/KBArticleList';
+import { Footer } from '@/components/common/Footer';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Sparkles } from 'lucide-react';
@@ -140,6 +141,7 @@ export function KnowledgeBasePage() {
                     </div>
                 </motion.div>
             </section>
+            <Footer />
         </main>
     );
 }

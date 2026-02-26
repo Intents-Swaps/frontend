@@ -16,14 +16,13 @@ import { motion } from 'framer-motion';
 
 const footerLinks = {
     protocol: [
-        { label: 'Swap', href: '/swap' },
-        { label: 'Cross-Chain', href: '/crossswap' },
+        { label: 'Swap', href: '/trade' },
         { label: 'Oracle', href: '/oracle' },
         { label: 'Resolver', href: '/resolver' },
     ],
     resources: [
         { label: 'Documentation', href: 'https://bch-intents-docs.vercel.app/', external: true },
-        { label: 'GitHub', href: 'https://github.com/Move-Intent-Protocol', external: true },
+        { label: 'GitHub', href: 'https://github.com/Intents-Swaps', external: true },
         { label: 'Knowledge Base', href: '/kb' },
         { label: 'API Reference', href: '#' },
     ],
@@ -38,7 +37,7 @@ const footerLinks = {
 const socialLinks = [
     {
         icon: Twitter,
-        href: 'https://x.com/intentprotocol',
+        href: 'https://x.com/intents_swap',
         label: 'Twitter',
         color: 'hover:bg-blue-500/10 hover:text-blue-500'
     },
@@ -50,7 +49,7 @@ const socialLinks = [
     },
     {
         icon: Github,
-        href: 'https://github.com/Move-Intent-Protocol',
+        href: 'https://github.com/Intents-Swaps',
         label: 'GitHub',
         color: 'hover:bg-purple-500/10 hover:text-purple-500'
     },

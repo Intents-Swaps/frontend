@@ -62,7 +62,7 @@ export function HeroStatsSection() {
                             <div className="w-10 h-10 bg-white text-black font-black flex items-center justify-center rounded-xl text-xl">
                                 M
                             </div>
-                            <span className="text-xl font-bold tracking-wide">Movement {`{LABS}`}</span>
+                            <span className="text-xl font-bold tracking-wide">BCH Intents Lab</span>
                         </div>
 
                         {/* Main Typography */}

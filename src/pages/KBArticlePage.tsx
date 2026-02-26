@@ -10,6 +10,7 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Footer } from '@/components/common/Footer';
 
 export function KBArticlePage() {
     const { articleId, categoryId } = useParams();
@@ -239,6 +240,7 @@ export function KBArticlePage() {
                     </div>
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }

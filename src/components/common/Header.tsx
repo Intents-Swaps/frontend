@@ -35,18 +35,14 @@ export function Header() {
         { name: 'Portfolio', path: '/portfolio' },
     ];
 
-    const moreNavItems = [
-        { name: 'Swap', path: '/swap' },
-        { name: 'Cross Orders', path: '/crossorders' },
-        { name: 'Rules', path: '/crossswap' },
-        { name: 'Pro', path: '/pro' },
+    const dropdownItems = [
         { name: 'Oracle', path: '/oracle' },
-        { name: 'Resolver', path: '/resolver' },
         { name: 'Monitor', path: '/monitor' },
+        { name: 'Knowledge Base', path: '/kb' },
     ];
 
     if (connected) {
-        moreNavItems.push({ name: 'Orders', path: '/orders' });
+        dropdownItems.push({ name: 'Orders', path: '/orders' });
     }
 
     return (
@@ -91,15 +87,11 @@ export function Header() {
                                 More <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="bg-[#0A0A0A]/95 backdrop-blur-xl border-white/10 text-foreground">
-                                <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
-                                    <Link to="/oracle" className="w-full">Oracle</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
-                                    <Link to="/monitor" className="w-full">Monitor</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
-                                    <Link to="/kb" className="w-full">Knowledge Base</Link>
-                                </DropdownMenuItem>
+                                {dropdownItems.map((item) => (
+                                    <DropdownMenuItem key={item.path} asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
+                                        <Link to={item.path} className="w-full">{item.name}</Link>
+                                    </DropdownMenuItem>
+                                ))}
                                 <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
                                     <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="w-full">Docs</a>
                                 </DropdownMenuItem>
@@ -164,9 +156,7 @@ export function Header() {
                             <nav className="flex flex-col gap-6">
                                 {[
                                     ...primaryNavItems,
-                                    ...moreNavItems,
-                                    { name: 'Add New Token', path: '/add-token' },
-                                    { name: 'Knowledge Base', path: '/kb' }
+                                    ...dropdownItems,
                                 ].map((item) => (
                                     <Link
                                         key={item.path}
@@ -181,6 +171,16 @@ export function Header() {
                                         <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
                                     </Link>
                                 ))}
+                                <a
+                                    href="https://bch-intents-docs.vercel.app/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => setIsOpen(false)}
+                                    className="text-xl font-medium transition-colors hover:text-primary flex items-center justify-between group text-muted-foreground"
+                                >
+                                    Docs
+                                    <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                </a>
                             </nav>
                             <div className="pt-8 border-t border-white/10 flex flex-col gap-4">
                                 <div className="flex gap-3 mt-2">
