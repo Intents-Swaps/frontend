@@ -28,7 +28,7 @@ If the transaction fails, you pay gas anyway. If you get front-run (MEV), you ge
 
 With Intent Protocol, you don't build transactions; you express **outcomes**.
 
-> "I want to exchange 100 MOVE for at least 150 USDC."
+> "I want to exchange 450 USDC for at least 1 BCH."
 
 You sign this statement cryptographically. That's it. You don't pay gas to post it. You don't worry about routing.
 

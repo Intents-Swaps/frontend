@@ -25,10 +25,10 @@ On **Intent Protocol**, your funds stay in **your wallet** (or your personal non
 
 Limit Orders working similarly to Swaps, but with a **fixed price** instead of a decaying auction.
 
-1.  **Creation**: You define that you want to sell `1 ETH` for exactly `2000 USDC`.
+1.  **Creation**: You define that you want to sell `450 USDC` on Ethereum for exactly `1 BCH` on Bitcoin Cash.
 2.  **Signing**: You sign an intent with a long expiration (e.g., 7 days).
 3.  **Storage**: The intent sits in the off-chain Order Book.
-4.  **Execution**: When the market price of ETH hits $2000, a Relayer executes your order.
+4.  **Execution**: When the market price of BCH hits $450, a Relayer executes your order.
 
 ## Step-by-Step Guide
 

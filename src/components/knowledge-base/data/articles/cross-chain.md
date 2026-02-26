@@ -11,19 +11,19 @@ tags: roadmap, cross-chain, future
 
 # One Unified Liquidity Layer
 
-The vision of Intent Protocol extends beyond a single chain. We are actively developing strict **Atomic Cross-Chain Swaps**.
+The vision of BCH Intents Protocol extends beyond a single chain. We are actively developing strict **Atomic Cross-Chain Swaps**.
 
 ## The Vision
 
-Imagine having USDC on Ethereum, but wanting to buy a strictly Move-native asset on Movement or Aptos.
+Imagine having USDC on Ethereum, but wanting to buy a strictly Move-native asset on Bitcoin Cash.
 Traditionally, this requires:
 1.  Bridging USDC to the destination chain (waiting 10-30 mins).
 2.  Finding a DEX.
 3.  Swapping.
 
-With **Intent Protocol Cross-Chain**, you simply express the intent:
+With **BCHIntents Protocol Cross-Chain**, you simply express the intent:
 
-> "I want to sell 1000 USDC (on Ethereum) and receive APT (on Aptos)."
+> "I want to sell 1000 USDC (on Ethereum) and receive BCH (on Bitcoin Cash)."
 
 ## How it Will Work
 

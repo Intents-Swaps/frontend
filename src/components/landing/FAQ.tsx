@@ -34,7 +34,7 @@ const FAQ_DATA = [
     },
     {
         question: "Which chains are currently supported?",
-        answer: "BCH Intents supports Bitcoin Cash (BCH), Solana, and Movement (Move VM). Movement acts as the hub where intents are registered and verified. BCH and Solana are target chains settled via HTLC. We are live on testnet and expanding to mainnet."
+        answer: "BCH Intents supports Bitcoin Cash (BCH), Solana, and Movement (Move VM). BCH and Solana are target chains settled via HTLC. We are live on testnet and expanding to mainnet."
     },
     {
         question: "How do cross-chain swaps actually work?",
@@ -50,7 +50,7 @@ const FAQ_DATA = [
     },
     {
         question: "How do I become a Resolver?",
-        answer: "Resolvers join a reputation-based registry on Movement. If you are a market maker, trading firm, or developer interested in running a resolver node and earning fees by filling cross-chain intents, reach out to the BCH Intents team or check the developer documentation."
+        answer: "Resolvers join a reputation-based registry. If you are a market maker, trading firm, or developer interested in running a resolver node and earning fees by filling cross-chain intents, reach out to the BCH Intents team or check the developer documentation."
     }
 ];
 
