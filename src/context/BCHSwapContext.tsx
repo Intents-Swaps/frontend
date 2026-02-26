@@ -223,7 +223,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                 unit: 'sat'
             } as any]);
 
-            fundTxId = tx.txId;
+            fundTxId = tx.txId as string;
             console.log('[BCH→SOL] ✅ HTLC funded:', fundTxId);
             toast.success('BCH locked in HTLC covenant!', {
                 description: `Tx: ${fundTxId.slice(0, 16)}...`
@@ -357,7 +357,6 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
             console.log('[SOL→BCH] Step 3a: Loading spl-token...');
             const {
                 getAssociatedTokenAddress,
-                NATIVE_MINT,
                 createSyncNativeInstruction,
                 createAssociatedTokenAccountIdempotentInstruction,
             } = await import('@solana/spl-token');
@@ -1011,7 +1010,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                 const utxos = await provider.getUtxos(contractAddress);
                 if (utxos.length === 0) throw new Error('No funds found in the HTLC contract.');
 
-                const balance = utxos.reduce((acc, u) => acc + u.satoshis, 0n);
+                const balance = utxos.reduce((acc: bigint, u: any) => acc + u.satoshis, 0n);
                 console.log('[Claim] Found', balance, 'sats to claim');
 
                 const wif = bchWallet.getWIF();

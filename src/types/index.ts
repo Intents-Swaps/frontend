@@ -73,6 +73,7 @@ export interface BCHOrder {
         bchContractAddress?: string;
         movementEscrowId?: string;
         destFillTx?: string;
+        destTimelock?: number;
         direction?: string;        // e.g. 'BCH_TO_SOL', 'SOL_TO_BCH', etc.
     };
 }

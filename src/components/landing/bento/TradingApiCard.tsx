@@ -52,7 +52,7 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
 
             {/* CTA Button */}
             <a
-                href="https://move-intent-protocol.gitbook.io/move-intent-protocol-docs"
+                href="https://bch-intents-docs.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
             >

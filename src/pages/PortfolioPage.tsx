@@ -120,7 +120,7 @@ export default function PortfolioPage() {
                     <div className="sticky top-28 grid grid-cols-2 gap-3">
                         <SendModal />
                         <ReceiveModal />
-                        <Link to="/bchswap" className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] transition-colors group">
+                        <Link to="/trade" className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] transition-colors group">
                             <div className="text-primary group-hover:scale-110 transition-transform"><ArrowDownUp className="h-5 w-5" /></div>
                             <span className="text-sm font-medium text-foreground">Swap</span>
                         </Link>

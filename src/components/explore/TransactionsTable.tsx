@@ -43,7 +43,7 @@ export function TransactionsTable({ activeChain, refreshTrigger }: { activeChain
                 const history = await fetchOrderHistory();
                 if (!isMounted) return;
 
-                const completed = window.bchOrders || []; // Fallback for local orders if no global indexer exists yet
+                const completed = (window as any).bchOrders || []; // Fallback for local orders if no global indexer exists yet
                 // For a true global explorer, you'd fetch from an indexer backend. 
                 // Here we piece together what we can from user history if global isn't available.
 

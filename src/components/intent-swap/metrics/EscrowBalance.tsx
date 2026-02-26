@@ -15,7 +15,7 @@ interface EscrowBalanceProps {
 }
 
 export function EscrowBalance({ className }: EscrowBalanceProps) {
-    const { escrowBalance, depositToEscrow, withdrawFromEscrow, isLoading, refreshBalance } = useSwap();
+    const { escrowBalance, depositToEscrow, withdrawFromEscrow, isLoading, refreshBalance } = useSwap() as any;
     const [depositAmount, setDepositAmount] = useState("");
     const [withdrawAmount, setWithdrawAmount] = useState("");
     const [selectedToken, setSelectedToken] = useState<Token>(TOKENS[0]); // Default to MOVE

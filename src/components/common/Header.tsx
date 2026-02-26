@@ -101,7 +101,7 @@ export function Header() {
                                     <Link to="/kb" className="w-full">Knowledge Base</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild className="focus:bg-white/5 focus:text-primary cursor-pointer">
-                                    <a href="https://move-intent-protocol.gitbook.io/move-intent-protocol-docs" target="_blank" rel="noopener noreferrer" className="w-full">Docs</a>
+                                    <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="w-full">Docs</a>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

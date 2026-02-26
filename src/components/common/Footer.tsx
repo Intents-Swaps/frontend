@@ -22,7 +22,7 @@ const footerLinks = {
         { label: 'Resolver', href: '/resolver' },
     ],
     resources: [
-        { label: 'Documentation', href: 'https://move-intent-protocol.gitbook.io/move-intent-protocol-docs', external: true },
+        { label: 'Documentation', href: 'https://bch-intents-docs.vercel.app/', external: true },
         { label: 'GitHub', href: 'https://github.com/Move-Intent-Protocol', external: true },
         { label: 'Knowledge Base', href: '/kb' },
         { label: 'API Reference', href: '#' },
@@ -44,7 +44,7 @@ const socialLinks = [
     },
     {
         icon: BookOpen,
-        href: 'https://move-intent-protocol.gitbook.io/move-intent-protocol-docs',
+        href: 'https://bch-intents-docs.vercel.app/',
         label: 'Docs',
         color: 'hover:bg-green-500/10 hover:text-green-500'
     },

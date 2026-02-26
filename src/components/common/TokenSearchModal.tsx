@@ -29,7 +29,7 @@ export function TokenSearchModal({ children }: TokenSearchModalProps) {
     const handleSelectToken = () => {
         setOpen(false);
         setSearchQuery('');
-        navigate('/bchswap');
+        navigate('/trade');
     };
 
     return (
