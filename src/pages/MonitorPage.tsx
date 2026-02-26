@@ -52,8 +52,8 @@ interface UnifiedOrder {
 export function MonitorPage() {
     // Relayer contexts
     const { relayerUrl: cashtokenRelayerUrl } = useSwap();
-    // Re-use cross-chain relayer host (assuming port 3004 based on context/CrossChainContext)
-    const crossChainRelayerUrl = 'http://localhost:3004';
+    // Use environment variable for cross-chain relayer host
+    const crossChainRelayerUrl = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || 'https://cross-chain-relayer-production-a93e.up.railway.app';
 
     // State
     const [orders, setOrders] = useState<UnifiedOrder[]>([]);
@@ -434,10 +434,10 @@ export function MonitorPage() {
                                                 <TableCell className="align-top py-4">
                                                     <div className="flex flex-col gap-1">
                                                         <span className="text-sm font-medium text-zinc-200">
-                                                            {formatDistanceToNow(order.createdAt, { addSuffix: true })}
+                                                            {order.createdAt ? formatDistanceToNow(order.createdAt, { addSuffix: true }) : 'Unknown'}
                                                         </span>
                                                         <span className="text-xs text-zinc-500 font-mono">
-                                                            {format(order.createdAt, 'MMM dd, HH:mm:ss')}
+                                                            {order.createdAt ? format(order.createdAt, 'MMM dd, HH:mm:ss') : '--'}
                                                         </span>
                                                     </div>
                                                 </TableCell>
@@ -482,7 +482,7 @@ export function MonitorPage() {
                                                 <TableCell className="align-top py-4">
                                                     <div className="flex flex-col gap-2 items-start">
                                                         {renderStatusBadge(order.status)}
-                                                        {!isCompleted && order.expiryTime && (
+                                                        {!isCompleted && order.expiryTime && !isNaN(order.expiryTime) && (
                                                             <div className={`text-[10px] font-mono flex items-center gap-1 px-1.5 py-0.5 rounded border ${isExpired ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
                                                                 <Clock className="w-2.5 h-2.5" />
                                                                 {isExpired ? 'Expired' : `Expires in ${formatDistanceToNow(order.expiryTime)}`}
