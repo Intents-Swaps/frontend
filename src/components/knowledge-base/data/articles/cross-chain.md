@@ -15,7 +15,7 @@ The vision of BCH Intents Protocol extends beyond a single chain. We are activel
 
 ## The Vision
 
-Imagine having USDC on Ethereum, but wanting to buy a strictly Move-native asset on Bitcoin Cash.
+Imagine having USDC on Ethereum, but wanting to buy a strictly Cash Token asset on Bitcoin Cash.
 Traditionally, this requires:
 1.  Bridging USDC to the destination chain (waiting 10-30 mins).
 2.  Finding a DEX.
