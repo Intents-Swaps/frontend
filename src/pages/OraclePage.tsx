@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { PriceService } from "@/lib/pyth";
 import { PriceData } from "@/types";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight, ArrowDownRight, RefreshCcw } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, RefreshCcw, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CauldronTokenData, CauldronService } from "@/lib/cauldron";
 
 const ASSETS = [
     // Movement Chain
@@ -16,18 +17,31 @@ const ASSETS = [
     { symbol: "SOL", name: "Solana", chain: "Solana", priceKey: "SOL", icon: "/assets/solanaLogo.png" },
     { symbol: "USDC", name: "USD Coin", chain: "Solana", priceKey: "USDC", icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png" },
     { symbol: "USDT", name: "Tether", chain: "Solana", priceKey: "USDT", icon: "https://cryptologos.cc/logos/tether-usdt-logo.png" },
+
+    // Bitcoin Cash
+    { symbol: "BCH", name: "Bitcoin Cash", chain: "Bitcoin Cash", priceKey: "BCH", icon: "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" },
 ];
 
 export function OraclePage() {
     const [prices, setPrices] = useState<Record<string, PriceData>>({});
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [cashTokens, setCashTokens] = useState<CauldronTokenData[]>([]);
 
     const fetchPrices = async () => {
         setLoading(true);
-        const data = await PriceService.getLatestPrices();
-        setPrices(data);
-        setLastUpdated(new Date());
+        try {
+            const data = await PriceService.getLatestPrices();
+            setPrices(data);
+
+            // Also fetch Cauldron tokens
+            const cTokensRaw = await CauldronService.getTopCashTokens(8);
+            setCashTokens(cTokensRaw);
+
+            setLastUpdated(new Date());
+        } catch (e) {
+            console.error("Failed to fetch oracles", e);
+        }
         setLoading(false);
     };
 
@@ -75,7 +89,11 @@ export function OraclePage() {
                                         <p className="text-xs text-muted-foreground">{asset.name}</p>
                                     </div>
                                 </div>
-                                <Badge variant={asset.chain === 'Movement' ? 'default' : 'secondary'} className={asset.chain === 'Solana' ? 'bg-indigo-500 hover:bg-indigo-600 text-white' : 'bg-primary'}>
+                                <Badge variant={asset.chain === 'Movement' ? 'default' : 'secondary'} className={cn(
+                                    asset.chain === 'Solana' && 'bg-indigo-500 hover:bg-indigo-600 text-white',
+                                    asset.chain === 'Bitcoin Cash' && 'bg-emerald-500 hover:bg-emerald-600 text-white',
+                                    asset.chain === 'Movement' && 'bg-primary',
+                                )}>
                                     {asset.chain}
                                 </Badge>
                             </div>
@@ -98,6 +116,66 @@ export function OraclePage() {
                     );
                 })}
             </div>
+
+            {cashTokens.length > 0 && (
+                <div className="mt-12 space-y-6">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-tight">Top CashTokens</h2>
+                        <p className="text-sm text-muted-foreground mt-1">Live data from Cauldron Indexer</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {(() => {
+                            const bchPriceData = prices['BCH'];
+                            const bchPriceUsd = bchPriceData ? PriceService.formatPrice(bchPriceData) : 0;
+                            return cashTokens.map(ct => {
+                                const sym = ct.bcmr?.token?.symbol || ct.display_symbol || 'UNKNOWN';
+                                const iconRaw = ct.bcmr?.uris?.icon;
+                                const icon = iconRaw?.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${iconRaw.replace('ipfs://', '')}` : (iconRaw?.startsWith('http') ? iconRaw : `https://api.dicebear.com/7.x/identicon/svg?seed=${ct.token_id}`);
+                                const change24h = ct.change_24h_bp / 100;
+                                const isPositive = change24h >= 0;
+                                const tokenBchPrice = ct.price_now ? ct.price_now / 1e8 : 0;
+                                const calculatedUsdPrice = tokenBchPrice * bchPriceUsd;
+
+                                return (
+                                    <div key={ct.token_id} className="bg-card border border-emerald-500/20 rounded-xl p-6 shadow-sm flex flex-col justify-between h-[180px] hover:border-emerald-500/40 transition-colors">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-full bg-emerald-500/10 p-1 flex items-center justify-center overflow-hidden">
+                                                    <img src={icon} alt={ct.display_name} className="h-full w-full object-contain rounded-full" />
+                                                </div>
+                                                <div className="overflow-hidden">
+                                                    <h3 className="font-semibold truncate max-w-[100px]">{sym}</h3>
+                                                    <p className="text-xs text-muted-foreground truncate max-w-[100px]">{ct.display_name}</p>
+                                                </div>
+                                            </div>
+                                            <Badge variant="secondary" className="bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1">
+                                                <Layers className="w-3 h-3" />
+                                                CashToken
+                                            </Badge>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-xl font-bold font-mono">
+                                                <span>{calculatedUsdPrice > 0 ? `$${calculatedUsdPrice.toFixed(6)}` : 'N/A'}</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                {ct.price_now ? `${ct.price_now.toFixed(2)} sats` : 'N/A'}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                TVL: {ct.tvl_sats ? `${(ct.tvl_sats / 1e8).toFixed(4)} BCH` : 'N/A'}
+                                                {ct.trade_volume ? ` · Vol: ${(ct.trade_volume / 1e8).toFixed(4)} BCH` : ''}
+                                            </p>
+                                            <div className={cn("flex items-center text-sm font-medium", isPositive ? "text-green-500" : "text-red-500")}>
+                                                {isPositive ? <ArrowUpRight className="mr-1 h-3 w-3" /> : <ArrowDownRight className="mr-1 h-3 w-3" />}
+                                                {Math.abs(change24h).toFixed(2)}% (24h)
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        })()}
+                    </div>
+                </div>
+            )}
 
             <div className="bg-muted/30 rounded-lg p-6 text-center border-dashed border-2">
                 <h3 className="font-semibold mb-2">Build with Oracles</h3>

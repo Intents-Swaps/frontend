@@ -37,24 +37,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
                 // 2. Check for persisted session
                 const savedWalletName = localStorage.getItem('movement_wallet_name');
                 if (savedWalletName && detectedWallet.name === savedWalletName) {
-                    console.log('Auto-connecting to saved wallet:', savedWalletName);
+                    console.log('Restoring saved wallet session:', savedWalletName);
 
-                    // Attempt silent connection
+                    // We previously avoided this for Nightly, but user requested persistence
                     try {
+                        setConnecting(true);
                         const response = await connectWallet(detectedWallet);
                         if (response.status === UserResponseStatus.APPROVED) {
                             setAccount(response.args);
                             setConnected(true);
-
-                            // Load network
                             const networkInfo = await getWalletNetwork(detectedWallet);
                             if (networkInfo) setNetwork(networkInfo);
-
-                            toast.success(`Reconnected to ${detectedWallet.name}`);
                         }
                     } catch (e) {
-                        console.error('Auto-connect failed', e);
-                        localStorage.removeItem('movement_wallet_name'); // Clear stale session
+                        console.error('Failed to auto-connect restored session', e);
+                    } finally {
+                        setConnecting(false);
                     }
                 }
 

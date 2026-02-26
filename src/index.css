@@ -13,9 +13,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Movement Yellow (Light Mode) */
-    --primary: 47 100% 50%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Emerald Green (Primary Theme) */
+    --primary: 161 100% 41%;
+    --primary-foreground: 0 0% 98%;
 
     /* Movement Viridian */
     --secondary: 161 100% 41%;
@@ -47,9 +47,9 @@
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
 
-    /* Movement Yellow (Dark Mode) */
-    --primary: 47 100% 50%;
-    --primary-foreground: 240 5.9% 10%;
+    /* Emerald Green (Primary Theme) */
+    --primary: 161 100% 41%;
+    --primary-foreground: 0 0% 98%;
 
     /* Movement Viridian */
     --secondary: 161 100% 41%;
@@ -77,5 +77,305 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* ============================================================
+   MORPHIC DESIGN SYSTEM - DeFi UI Utilities
+   ============================================================
+   These utilities establish the visual language for the app.
+   Use them consistently across all components.
+   ============================================================ */
+
+@layer utilities {
+
+  /* --- Grainy Texture Overlays --- */
+  .grainy {
+    position: relative;
+  }
+
+  .grainy::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    border-radius: inherit;
+  }
+
+  .dark .grainy::before {
+    opacity: 0.05;
+  }
+
+  .grainy-strong::before {
+    opacity: 0.08;
+  }
+
+  .dark .grainy-strong::before {
+    opacity: 0.12;
+  }
+
+  /* --- Glassmorphism Cards --- */
+  .glass {
+    @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl;
+    @apply border border-white/20 dark:border-white/10;
+  }
+
+  .glass-subtle {
+    @apply bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md;
+    @apply border border-white/10 dark:border-white/5;
+  }
+
+  .glass-solid {
+    @apply bg-white dark:bg-zinc-900;
+    @apply border border-zinc-200 dark:border-zinc-800;
+  }
+
+  /* --- Bento Card Base --- */
+  .bento-card {
+    @apply relative overflow-hidden rounded-3xl p-6;
+    @apply bg-white dark:bg-zinc-900;
+    @apply border border-zinc-200/50 dark:border-zinc-800/50;
+    @apply transition-all duration-300 ease-out;
+    @apply hover:border-zinc-300 dark:hover:border-zinc-700;
+    @apply hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20;
+  }
+
+  .bento-card-interactive {
+    @apply bento-card cursor-pointer;
+    @apply hover:scale-[1.02] hover:-translate-y-1;
+  }
+
+  /* --- Gradient Mesh Backgrounds --- */
+  .mesh-gradient-primary {
+    background:
+      radial-gradient(ellipse at 20% 80%, hsl(var(--primary) / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(161 100% 41% / 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(240 10% 3.9% / 0.05) 0%, transparent 70%);
+  }
+
+  .dark .mesh-gradient-primary {
+    background:
+      radial-gradient(ellipse at 20% 80%, hsl(var(--primary) / 0.2) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(161 100% 41% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(270 50% 40% / 0.1) 0%, transparent 70%);
+  }
+
+  .mesh-gradient-pink {
+    background:
+      radial-gradient(ellipse at 70% 70%, hsl(330 80% 50% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 30%, hsl(280 70% 50% / 0.1) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-pink {
+    background:
+      radial-gradient(ellipse at 70% 70%, hsl(330 80% 50% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 30%, hsl(280 70% 50% / 0.15) 0%, transparent 50%);
+  }
+
+  .mesh-gradient-blue {
+    background:
+      radial-gradient(ellipse at 20% 80%, hsl(220 90% 50% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(200 90% 50% / 0.1) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-blue {
+    background:
+      radial-gradient(ellipse at 20% 80%, hsl(220 90% 50% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(200 90% 50% / 0.15) 0%, transparent 50%);
+  }
+
+  .mesh-gradient-green {
+    background:
+      radial-gradient(ellipse at 30% 70%, hsl(161 100% 41% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 30%, hsl(140 70% 40% / 0.1) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-green {
+    background:
+      radial-gradient(ellipse at 30% 70%, hsl(161 100% 41% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 30%, hsl(140 70% 40% / 0.15) 0%, transparent 50%);
+  }
+
+  .mesh-gradient-orange {
+    background:
+      radial-gradient(ellipse at 60% 60%, hsl(30 100% 50% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, hsl(var(--primary) / 0.1) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-orange {
+    background:
+      radial-gradient(ellipse at 60% 60%, hsl(30 100% 50% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 80%, hsl(var(--primary) / 0.15) 0%, transparent 50%);
+  }
+
+  .mesh-gradient-amber {
+    background:
+      radial-gradient(ellipse at 60% 70%, hsl(43 96% 56% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 20%, hsl(30 100% 50% / 0.08) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-amber {
+    background:
+      radial-gradient(ellipse at 60% 70%, hsl(43 96% 56% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 20% 20%, hsl(30 100% 50% / 0.15) 0%, transparent 50%);
+  }
+
+  .mesh-gradient-purple {
+    background:
+      radial-gradient(ellipse at 30% 70%, hsl(262 83% 58% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(280 70% 50% / 0.08) 0%, transparent 50%);
+  }
+
+  .dark .mesh-gradient-purple {
+    background:
+      radial-gradient(ellipse at 30% 70%, hsl(262 83% 58% / 0.28) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(280 70% 50% / 0.15) 0%, transparent 50%);
+  }
+
+  /* --- Glow Effects --- */
+  .glow-primary {
+    box-shadow: 0 0 60px -15px hsl(var(--primary) / 0.4);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 60px -15px hsl(161 100% 41% / 0.4);
+  }
+
+  .glow-pink {
+    box-shadow: 0 0 60px -15px hsl(330 80% 50% / 0.4);
+  }
+
+  /* --- Animated Backgrounds --- */
+  @keyframes gradient-shift {
+
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        hsl(var(--foreground) / 0.05) 50%,
+        transparent 100%);
+    animation: shimmer 2s infinite;
+  }
+
+  /* --- Text Gradients --- */
+  .text-gradient-primary {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(161 100% 41%) 100%);
+  }
+
+  .text-gradient-pink {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(135deg, hsl(330 80% 60%) 0%, hsl(280 70% 60%) 100%);
+  }
+
+  /* --- Icon Containers --- */
+  .icon-box {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center;
+    @apply bg-zinc-100 dark:bg-zinc-800;
+    @apply text-zinc-600 dark:text-zinc-300;
+  }
+
+  .icon-box-primary {
+    @apply icon-box;
+    @apply bg-primary/10 text-primary;
+  }
+
+  .icon-box-green {
+    @apply icon-box;
+    @apply bg-emerald-500/10 text-emerald-500;
+  }
+
+  /* --- Badge Styles --- */
+  .tag {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300;
+  }
+
+  .tag-primary {
+    @apply tag bg-primary/10 text-primary;
+  }
+
+  .tag-pink {
+    @apply tag bg-pink-500/10 text-pink-500;
+  }
+
+  .tag-green {
+    @apply tag bg-emerald-500/10 text-emerald-500;
+  }
+
+  /* --- Stat Display --- */
+  .stat-value {
+    @apply text-3xl md:text-4xl font-bold tracking-tight;
+  }
+
+  .stat-label {
+    @apply text-sm text-muted-foreground;
   }
 }

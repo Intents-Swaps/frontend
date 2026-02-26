@@ -24,8 +24,11 @@ export interface KBCategory {
 
 // Helper to parse simple Frontmatter
 const parseFrontmatter = (fileContent: string): KBArticle => {
+    // Normalize line endings (Windows CRLF -> LF)
+    const normalizedContent = fileContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
     const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-    const match = fileContent.match(frontmatterRegex);
+    const match = normalizedContent.match(frontmatterRegex);
 
     if (!match) {
         throw new Error('Invalid Markdown file format: Missing Frontmatter');

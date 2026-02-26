@@ -1,74 +1,210 @@
+/**
+ * Footer - Premium Footer Component
+ * 
+ * Features:
+ * - Morphic design with grainy texture
+ * - Gradient mesh background
+ * - Clean grid layout with social links
+ * - Animated hover states
+ * - Full light/dark mode support
+ */
 
 import { Link } from 'react-router-dom';
-import { Twitter, Github, BookOpen } from 'lucide-react';
+import { Twitter, Github, BookOpen, Zap, ArrowUpRight, Mail } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+
+const footerLinks = {
+    protocol: [
+        { label: 'Swap', href: '/swap' },
+        { label: 'Cross-Chain', href: '/crossswap' },
+        { label: 'Oracle', href: '/oracle' },
+        { label: 'Resolver', href: '/resolver' },
+    ],
+    resources: [
+        { label: 'Documentation', href: 'https://move-intent-protocol.gitbook.io/move-intent-protocol-docs', external: true },
+        { label: 'GitHub', href: 'https://github.com/Move-Intent-Protocol', external: true },
+        { label: 'Knowledge Base', href: '/kb' },
+        { label: 'API Reference', href: '#' },
+    ],
+    company: [
+        { label: 'About', href: '#' },
+        { label: 'Blog', href: '#' },
+        { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+    ],
+};
+
+const socialLinks = [
+    {
+        icon: Twitter,
+        href: 'https://x.com/intentprotocol',
+        label: 'Twitter',
+        color: 'hover:bg-blue-500/10 hover:text-blue-500'
+    },
+    {
+        icon: BookOpen,
+        href: 'https://move-intent-protocol.gitbook.io/move-intent-protocol-docs',
+        label: 'Docs',
+        color: 'hover:bg-green-500/10 hover:text-green-500'
+    },
+    {
+        icon: Github,
+        href: 'https://github.com/Move-Intent-Protocol',
+        label: 'GitHub',
+        color: 'hover:bg-purple-500/10 hover:text-purple-500'
+    },
+    {
+        icon: Mail,
+        href: 'mailto:hello@intentprotocol.xyz',
+        label: 'Email',
+        color: 'hover:bg-orange-500/10 hover:text-orange-500'
+    },
+];
+
+interface FooterLinkProps {
+    label: string;
+    href: string;
+    external?: boolean;
+}
+
+function FooterLink({ label, href, external }: FooterLinkProps) {
+    const className = cn(
+        "text-sm text-muted-foreground hover:text-foreground transition-colors",
+        "flex items-center gap-1 group"
+    );
+
+    if (external) {
+        return (
+            <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={className}
+            >
+                {label}
+                <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
+            </a>
+        );
+    }
+
+    return (
+        <Link to={href} className={className}>
+            {label}
+        </Link>
+    );
+}
 
 export function Footer() {
     return (
-        <footer className="border-t border-border/40 bg-background py-12 mt-auto">
-            <div className="container mx-auto px-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                    {/* Brand */}
-                    <div className="space-y-4">
-                        <Link to="/home" className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary-foreground">
-                                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
+        <footer className="relative border-t border-border/40 mt-auto overflow-hidden">
+            {/* Gradient Mesh Background */}
+            <div className="absolute inset-0 mesh-gradient-primary opacity-30" />
+            <div className="absolute inset-0 grainy" />
+
+            <div className="container mx-auto px-4 relative z-10">
+                {/* Main Footer Content */}
+                <div className="py-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8">
+                        {/* Brand Column */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <Link to="/" className="flex items-center gap-3 group">
+                                <div className={cn(
+                                    "w-10 h-10 rounded-xl bg-primary flex items-center justify-center",
+                                    "group-hover:scale-110 transition-transform duration-300",
+                                    "shadow-lg shadow-primary/30"
+                                )}>
+                                    <Zap className="w-5 h-5 text-primary-foreground" />
+                                </div>
+                                <span className="font-heading font-bold text-xl tracking-tight">
+                                    BCH <span className="text-primary">Intents</span>
+                                </span>
+                            </Link>
+
+                            <p className="text-muted-foreground max-w-sm leading-relaxed">
+                                The fastest intent-based swap protocol bridging Bitcoin Cash and Solana.
+                                Gasless, secure, and cross-chain ready.
+                            </p>
+
+                            {/* Social Links */}
+                            <div className="flex items-center gap-2">
+                                {socialLinks.map((social) => (
+                                    <motion.a
+                                        key={social.label}
+                                        href={social.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        className={cn(
+                                            "w-10 h-10 rounded-xl flex items-center justify-center",
+                                            "bg-muted/50 text-muted-foreground",
+                                            "transition-colors duration-200",
+                                            social.color
+                                        )}
+                                        aria-label={social.label}
+                                    >
+                                        <social.icon className="w-5 h-5" />
+                                    </motion.a>
+                                ))}
                             </div>
-                            <span className="font-heading font-bold text-xl tracking-tight">
-                                Intent<span className="text-primary">Protocol</span>
-                            </span>
-                        </Link>
-                        <p className="text-sm text-muted-foreground">
-                            The fastest intent-based swap protocol on Movement.
-                            Gasless, secure, and cross-chain ready.
-                        </p>
-                    </div>
+                        </div>
 
-                    {/* Columns */}
-                    <div>
-                        <h4 className="font-bold mb-4">Protocol</h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li><Link to="/swap" className="hover:text-primary transition-colors">Swap</Link></li>
-                            <li><Link to="/cross-chain" className="hover:text-primary transition-colors">Cross-Chain</Link></li>
-                            <li><Link to="/oracle" className="hover:text-primary transition-colors">Oracle</Link></li>
-                            <li><Link to="/resolver" className="hover:text-primary transition-colors">Resolver</Link></li>
-                        </ul>
-                    </div>
+                        {/* Links Columns */}
+                        <div>
+                            <h4 className="font-bold mb-4 text-foreground">Protocol</h4>
+                            <ul className="space-y-3">
+                                {footerLinks.protocol.map((link) => (
+                                    <li key={link.label}>
+                                        <FooterLink {...link} />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
-                    <div>
-                        <h4 className="font-bold mb-4">Resources</h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li><a href="https://move-intent-protocol.gitbook.io/move-intent-protocol-docs" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Documentation</a></li>
-                            <li><a href="https://github.com/Move-Intent-Protocol" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Github</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Audit Reports</a></li>
-                        </ul>
-                    </div>
+                        <div>
+                            <h4 className="font-bold mb-4 text-foreground">Resources</h4>
+                            <ul className="space-y-3">
+                                {footerLinks.resources.map((link) => (
+                                    <li key={link.label}>
+                                        <FooterLink {...link} />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
 
-                    <div>
-                        <h4 className="font-bold mb-4">Community</h4>
-                        <div className="flex gap-4">
-                            <a href="https://x.com/intentprotocol" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                                <Twitter className="h-5 w-5" />
-                            </a>
-                            <a href="https://move-intent-protocol.gitbook.io/move-intent-protocol-docs" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                                <BookOpen className="h-5 w-5" />
-                            </a>
-                            <a href="https://github.com/Move-Intent-Protocol" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                                <Github className="h-5 w-5" />
-                            </a>
+                        <div>
+                            <h4 className="font-bold mb-4 text-foreground">Company</h4>
+                            <ul className="space-y-3">
+                                {footerLinks.company.map((link) => (
+                                    <li key={link.label}>
+                                        <FooterLink {...link} />
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
 
-                <div className="pt-8 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-                    <p>© 2026 Intent Protocol. All rights reserved.</p>
-                    <div className="flex gap-4">
-                        <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-                        <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+                {/* Bottom Bar */}
+                <div className="py-6 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p className="text-sm text-muted-foreground">
+                        © {new Date().getFullYear()} BCH Intents. All rights reserved.
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                            Built on
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs font-medium">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            Bitcoin Cash
+                        </span>
                     </div>
                 </div>
             </div>
         </footer>
     );
 }
+
+export default Footer;

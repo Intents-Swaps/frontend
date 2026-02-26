@@ -12,6 +12,7 @@ export const PRICE_FEEDS = {
     ETH: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
     USDC: "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a", // USDC/USD
     USDT: "0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b", // USDT/USD
+    BCH: "0x3dd2b63686a450ec7290df3a1e0b583c0481f651351edfa7636f39aed55cf8a3", // BCH/USD
     // Mappings for bridged tokens
     "WETH.e": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
     "USDC.e": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
@@ -24,7 +25,9 @@ export const PriceService = {
      */
     async getLatestPrices(): Promise<Record<string, PriceData>> {
         try {
-            const ids = Object.values(PRICE_FEEDS);
+            const ids = Array.from(new Set(Object.values(PRICE_FEEDS)));
+            console.log("Fetching Pyth prices for IDs:", ids);
+
             const response = await axios.get(`${HERMES_URL}/v2/updates/price/latest`, {
                 params: {
                     ids: ids,
@@ -36,16 +39,22 @@ export const PriceService = {
             const prices: Record<string, PriceData> = {};
 
             // Map response back to symbols
+            // Map response back to symbols
             const parsed = response.data.parsed;
+            // console.log("Pyth response parsed:", parsed);
+
             if (parsed) {
                 // Determine which ID belongs to which symbol
                 for (const [symbol, id] of Object.entries(PRICE_FEEDS)) {
                     const feed = parsed.find((p: any) => p.id === id.replace("0x", ""));
                     if (feed) {
                         prices[symbol] = feed.price;
+                    } else {
+                        console.warn(`No price feed found for ${symbol} (ID: ${id})`);
                     }
                 }
             }
+            console.log("Processed prices:", prices);
             return prices;
 
         } catch (error) {

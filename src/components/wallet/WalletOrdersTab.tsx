@@ -1,0 +1,122 @@
+import { useEffect } from 'react';
+import { useBCHSwapOptional } from '@/context/BCHSwapContext';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Clock, CheckCircle2, XCircle, ExternalLink, RefreshCw, ArrowRight, Loader2 } from 'lucide-react';
+import { BCHOrder } from '@/types';
+
+// ============================================================================
+// Wallet Orders Tab — Reuses BCHOrderTracker logic in popup layout
+// Uses useBCHSwapOptional to safely handle pages without BCHSwapProvider
+// ============================================================================
+
+function getTimeAgo(timestamp: number): string {
+    const diff = Date.now() - timestamp;
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+function OrderRow({ order }: { order: BCHOrder }) {
+    const statusConfig: Record<string, { icon: React.ReactNode; badge: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
+        pending: { icon: <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />, badge: 'default', label: 'Pending' },
+        claimable: { icon: <CheckCircle2 className="h-3 w-3 text-blue-400 animate-pulse" />, badge: 'default', label: 'Claim' },
+        claimed: { icon: <CheckCircle2 className="h-3 w-3 text-teal-400" />, badge: 'secondary', label: 'Claimed' },
+        filled: { icon: <CheckCircle2 className="h-3 w-3 text-emerald-400" />, badge: 'secondary', label: 'Filled' },
+        cancelled: { icon: <XCircle className="h-3 w-3 text-red-400" />, badge: 'destructive', label: 'Cancelled' },
+        expired: { icon: <Clock className="h-3 w-3 text-muted-foreground" />, badge: 'outline', label: 'Expired' },
+    };
+
+    const config = statusConfig[order.status] || statusConfig.pending;
+    const swapLabels: Record<string, string> = {
+        'same-chain': 'Same Chain',
+        'bch-to-sol': 'BCH → SOL',
+        'sol-to-bch': 'SOL → BCH',
+    };
+
+    return (
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+                {config.icon}
+                <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <span>{order.sellAmount} {order.sellToken?.symbol || '?'}</span>
+                        <ArrowRight className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                        <span>{Number(order.buyAmount).toFixed(4)} {order.buyToken?.symbol || '?'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] text-muted-foreground">{swapLabels[order.swapType]}</span>
+                        <span className="text-[9px] text-muted-foreground">• {getTimeAgo(order.createdAt)}</span>
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Badge variant={config.badge} className="text-[9px] h-4 px-1.5">{config.label}</Badge>
+                {order.txid && (
+                    <a
+                        href={`https://chipnet.chaingraph.cash/tx/${order.txid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground hover:text-foreground"
+                    >
+                        <ExternalLink className="h-3 w-3" />
+                    </a>
+                )}
+            </div>
+        </div>
+    );
+}
+
+export function WalletOrdersTab() {
+    const swapCtx = useBCHSwapOptional();
+
+    const pendingOrders = swapCtx?.pendingOrders || [];
+    const completedOrders = swapCtx?.completedOrders || [];
+    const refreshOrders = swapCtx?.refreshOrders || (() => Promise.resolve());
+    const isLoading = swapCtx?.isLoading || false;
+
+    useEffect(() => {
+        if (pendingOrders.length === 0) return;
+        const interval = setInterval(refreshOrders, 30000);
+        return () => clearInterval(interval);
+    }, [pendingOrders.length, refreshOrders]);
+
+    const allOrders = [...pendingOrders, ...completedOrders].slice(0, 15);
+
+    return (
+        <div className="space-y-1">
+            <div className="flex items-center justify-between px-1 py-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    {pendingOrders.length > 0 ? `${pendingOrders.length} Active` : 'Orders'}
+                </span>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                    onClick={() => refreshOrders()}
+                    disabled={isLoading}
+                >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </Button>
+            </div>
+
+            {allOrders.length === 0 ? (
+                <div className="text-center py-10">
+                    <Clock className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No orders yet</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        {swapCtx ? 'Your swap orders will appear here' : 'Navigate to BCH Swap to create orders'}
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-1">
+                    {allOrders.map(order => (
+                        <OrderRow key={order.id} order={order} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

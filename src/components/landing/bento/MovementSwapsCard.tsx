@@ -1,0 +1,188 @@
+/**
+ * MovementSwapsCard - Card 2 in the bento grid
+ * 
+ * Features:
+ * - Movement Swaps header with icon
+ * - "Construct. Express. Execute." tagline
+ * - Dutch Auctions description
+ * - Animated swap visualization showing token routing
+ */
+
+import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
+import { ArrowRight, Sparkles, Zap, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TokenDisplay } from '@/components/common/TokenDisplay';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Tokens for the swap animation
+const SWAP_PAIRS = [
+    {
+        from: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
+        to: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
+    },
+    {
+        from: { icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', ticker: 'ETH' },
+        to: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
+    },
+    {
+        from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
+        to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
+    },
+];
+
+// Feature badges
+const FEATURES = [
+    { icon: Shield, label: 'MEV protection', color: 'text-blue-500' },
+    { icon: Sparkles, label: 'Best swap', color: 'text-primary' },
+    { icon: Zap, label: 'Free', color: 'text-green-500' },
+];
+
+interface MovementSwapsCardProps {
+    className?: string;
+}
+
+export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
+    const [currentPair, setCurrentPair] = useState(0);
+
+    // Rotate swap pairs every 2 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentPair((prev) => (prev + 1) % SWAP_PAIRS.length);
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const pair = SWAP_PAIRS[currentPair];
+
+    return (
+        <div
+            className={cn(
+                'bento-card h-full min-h-[420px] flex flex-col',
+                'mesh-gradient-pink grainy',
+                className
+            )}
+        >
+            {/* Card Header */}
+            <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-pink-500" />
+                </div>
+                <span className="tag-pink">
+                    <Zap className="w-3 h-3" />
+                    Intents Swap
+                </span>
+            </div>
+
+            {/* Tagline - Gradient text like Uniswap */}
+            <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                <span className="text-gradient-pink">
+                    Smarter swaps. Aggregated liquidity.
+                </span>
+            </h3>
+
+            {/* Description */}
+            <p className="text-muted-foreground mb-4 leading-relaxed">
+                Stop fighting for gas. Express your intent using{' '}
+                <span className="text-foreground font-medium">Dutch Auctions</span> and let
+                professional Resolvers execute your trades optimally, every time.
+            </p>
+
+            {/* CTA and Feature Badges */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+                <Link to="/swap">
+                    <Button variant="outline" className="rounded-full gap-2 group border-pink-500/30 hover:border-pink-500/50 hover:bg-pink-500/5">
+                        Try Intent Swap
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                </Link>
+
+                {FEATURES.map((feature) => (
+                    <div
+                        key={feature.label}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 text-sm"
+                    >
+                        <feature.icon className={cn('w-3.5 h-3.5', feature.color)} />
+                        <span className="text-foreground/80">{feature.label}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Animated Swap Visualization */}
+            <div className="mt-auto">
+                <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl p-6 relative overflow-hidden">
+                    {/* Animated routing line */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <motion.div
+                            className="h-0.5 bg-gradient-to-r from-pink-500/0 via-pink-500 to-pink-500/0"
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: '60%', opacity: 1 }}
+                            transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between relative z-10">
+                        {/* From Token */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={`from-${currentPair}`}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col items-center gap-2"
+                            >
+                                <TokenDisplay
+                                    tokenIcon={pair.from.icon}
+                                    size="xl"
+                                    compact
+                                    showChainBadge={false}
+                                />
+                                <span className="text-sm font-medium text-muted-foreground">
+                                    {pair.from.ticker}
+                                </span>
+                            </motion.div>
+                        </AnimatePresence>
+
+                        {/* Arrow with pulse */}
+                        <div className="flex flex-col items-center gap-1">
+                            <motion.div
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                                className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center"
+                            >
+                                <ArrowRight className="w-5 h-5 text-pink-500" />
+                            </motion.div>
+                            <span className="text-xs text-pink-500 font-medium">~2s</span>
+                        </div>
+
+                        {/* To Token */}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={`to-${currentPair}`}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                transition={{ duration: 0.3 }}
+                                className="flex flex-col items-center gap-2"
+                            >
+                                <TokenDisplay
+                                    tokenIcon={pair.to.icon}
+                                    size="xl"
+                                    compact
+                                    showChainBadge={false}
+                                />
+                                <span className="text-sm font-medium text-muted-foreground">
+                                    {pair.to.ticker}
+                                </span>
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default MovementSwapsCard;
