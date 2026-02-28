@@ -51,7 +51,7 @@ flowchart LR
 
 1. **Connect Wallets** — The user connects their BCH wallet (via WIF/Cashaddr), Solana wallet (Phantom/Solflare), and/or Movement wallet (Petra/Nightly) simultaneously.
 2. **Express Intent** — The user selects a token pair (e.g., BCH → SOL), enters amounts, and chooses Market or Limit order type.
-3. **Gasless Signing** — For cross-chain swaps, the frontend generates a cryptographic `hashlock` and broadcasts the intent to the appropriate Resolver API. The user never pays gas on the destination chain.
+3. **Gasless Signing** — For cross-chain swaps, the frontend generates a cryptographic `hashlock` and broadcasts the intent to the appropriate Resolver API. The user never pays gas on the destination chain. (ongoing)
 4. **Resolver Fills** — An independent Resolver picks up the intent and locks counter-liquidity on the destination chain.
 5. **User Claims** — The frontend detects the fill, reveals the `secret` preimage, and the user claims their funds atomically.
 
