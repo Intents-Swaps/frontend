@@ -15,16 +15,16 @@ interface CardProps {
 
 // Wallet icons data
 const WALLETS = [
-    { name: 'MetaMask', color: '#F6851B', icon: '🦊' },
-    { name: 'Phantom', color: '#AB9FF2', icon: '👻' },
-    { name: 'Petra', color: '#FF5F5F', icon: '🔴' },
-    { name: 'Razor', color: '#00D395', icon: '⚡' },
+    { name: 'MetaMask', color: '#F6851B', icon: 'https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg' },
+    { name: 'Nightly', color: '#6A44FF', icon: 'https://nightly.app/img/logo.png' },
+    { name: 'Phantom', color: '#AB9FF2', icon: 'https://phantom.com/img/phantom-logo.svg' },
+    { name: 'Electron Cash', color: '#0AC18E', icon: 'https://electroncash.org/images/logosForEcosystem/square/electroncash.png' },
 ];
 
 export function ConnectWalletCard({ stepNumber }: CardProps) {
     return (
         <div className={cn(
-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
+            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
             "grainy group cursor-pointer"
         )}>
             {/* Gradient Background on Hover */}
@@ -77,7 +77,21 @@ export function ConnectWalletCard({ stepNumber }: CardProps) {
                                     ease: 'easeInOut',
                                 }}
                             >
-                                <span className="text-3xl">{wallet.icon}</span>
+                                <img
+                                    src={wallet.icon}
+                                    alt={wallet.name}
+                                    className="w-10 h-10 object-contain rounded-xl"
+                                    onError={(e) => {
+                                        // Fallback to initial letter if image fails
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.nextElementSibling) {
+                                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                        }
+                                    }}
+                                />
+                                <span className="text-2xl font-bold hidden" style={{ color: wallet.color }}>
+                                    {wallet.name.charAt(0)}
+                                </span>
                             </motion.div>
                         ))}
 

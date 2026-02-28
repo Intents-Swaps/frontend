@@ -17,16 +17,16 @@ interface CardProps {
 // Token pairs for swap animation
 const SWAP_PAIRS = [
     {
-        from: { symbol: 'SOL', amount: '5', icon: '/images/tokens/sol.svg', color: '#9945FF' },
-        to: { symbol: 'BCH', amount: '40', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
+        from: { symbol: 'SOL', amount: '5', icon: '/assets/solanaLogo.png', color: '#9945FF' },
+        to: { symbol: 'BCH', amount: '40', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
     },
     {
-        from: { symbol: 'ETH', amount: '1', icon: '/images/tokens/eth.svg', color: '#627EEA' },
-        to: { symbol: 'BCH', amount: '6', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
+        from: { symbol: 'ETH', amount: '1', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', color: '#627EEA' },
+        to: { symbol: 'BCH', amount: '6', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
     },
     {
-        from: { symbol: 'MOVE', amount: '1000', icon: '/images/tokens/move.svg', color: '#FACC15' },
-        to: { symbol: 'BCH', amount: '2', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
+        from: { symbol: 'MOVE', amount: '1000', icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', color: '#FACC15' },
+        to: { symbol: 'BCH', amount: '2', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
     },
 ];
 
@@ -51,7 +51,7 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
 
     return (
         <div className={cn(
-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
+            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
             "grainy group cursor-pointer"
         )}>
             {/* Gradient Background on Hover */}
@@ -100,12 +100,10 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
                             )}
                         >
                             <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1"
+                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 overflow-hidden"
                                 style={{ backgroundColor: `${currentPair.from.color}20` }}
                             >
-                                <span className="text-lg font-bold" style={{ color: currentPair.from.color }}>
-                                    {currentPair.from.symbol.slice(0, 1)}
-                                </span>
+                                <img src={currentPair.from.icon} alt={currentPair.from.symbol} className="w-full h-full object-cover" />
                             </div>
                             <span className="text-xs font-medium text-muted-foreground">
                                 {currentPair.from.amount}
@@ -179,12 +177,10 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
                             )}
                         >
                             <div
-                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1"
+                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 overflow-hidden"
                                 style={{ backgroundColor: `${currentPair.to.color}20` }}
                             >
-                                <span className="text-lg font-bold" style={{ color: currentPair.to.color }}>
-                                    {currentPair.to.symbol.slice(0, 1)}
-                                </span>
+                                <img src={currentPair.to.icon} alt={currentPair.to.symbol} className="w-full h-full object-cover" />
                             </div>
                             <span className="text-xs font-medium text-muted-foreground">
                                 {currentPair.to.amount}

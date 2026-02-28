@@ -16,19 +16,43 @@ import { TokenDisplay } from '@/components/common/TokenDisplay';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Tokens for the swap animation
+// Tokens for the swap animation — CashToken + Cross-Chain swaps
 const SWAP_PAIRS = [
-    {
-        from: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
-        to: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
-    },
-    {
-        from: { icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', ticker: 'ETH' },
-        to: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
-    },
+    // Cross-chain: SOL → BCH
     {
         from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
         to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
+        type: 'Cross-Chain',
+    },
+    // Cross-chain: MOVE → MUSD
+    {
+        from: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
+        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
+        type: 'Cross-Chain',
+    },
+    // Cross-chain: USDC → BCH
+    {
+        from: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
+        to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
+        type: 'Cross-Chain',
+    },
+    // CashToken: MUSD → BCH (same-chain)
+    {
+        from: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
+        to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
+        type: 'CashToken',
+    },
+    // CashToken: BCH → MUSD (same-chain)
+    {
+        from: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
+        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
+        type: 'CashToken',
+    },
+    // Cross-chain: SOL → MUSD
+    {
+        from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
+        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
+        type: 'Cross-Chain',
     },
 ];
 
@@ -145,8 +169,25 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* Arrow with pulse */}
+                        {/* Arrow with pulse + swap type label */}
                         <div className="flex flex-col items-center gap-1">
+                            <AnimatePresence mode="wait">
+                                <motion.span
+                                    key={`type-${currentPair}`}
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 5 }}
+                                    transition={{ duration: 0.2 }}
+                                    className={cn(
+                                        "text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1",
+                                        pair.type === 'CashToken'
+                                            ? "bg-emerald-500/10 text-emerald-500"
+                                            : "bg-purple-500/10 text-purple-500"
+                                    )}
+                                >
+                                    {pair.type}
+                                </motion.span>
+                            </AnimatePresence>
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ duration: 1, repeat: Infinity }}

@@ -8,6 +8,7 @@
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { TokenDisplay } from '@/components/common/TokenDisplay';
 
 interface CardProps {
     stepNumber: number;
@@ -16,13 +17,22 @@ interface CardProps {
 // Mock portfolio data
 const ASSETS = [
     {
+        symbol: 'BCH',
+        name: 'Bitcoin Cash',
+        balance: '15.50',
+        value: '$6,200.00',
+        pnl: '+15.2%',
+        isPositive: true,
+        tokenIcon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg',
+    },
+    {
         symbol: 'MOVE',
         name: 'Movement',
         balance: '1,250.00',
         value: '$2,500.00',
         pnl: '+12.5%',
         isPositive: true,
-        color: '#FACC15',
+        tokenIcon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
     },
     {
         symbol: 'USDC',
@@ -31,7 +41,7 @@ const ASSETS = [
         value: '$5,000.00',
         pnl: '0.0%',
         isPositive: true,
-        color: '#2775CA',
+        tokenIcon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
     },
     {
         symbol: 'SOL',
@@ -40,23 +50,14 @@ const ASSETS = [
         value: '$3,825.00',
         pnl: '+8.2%',
         isPositive: true,
-        color: '#9945FF',
-    },
-    {
-        symbol: 'ETH',
-        name: 'Ethereum',
-        balance: '0.85',
-        value: '$2,125.00',
-        pnl: '-2.1%',
-        isPositive: false,
-        color: '#627EEA',
+        tokenIcon: '/assets/solanaLogo.png',
     },
 ];
 
 export function TrackPortfolioCard({ stepNumber }: CardProps) {
     return (
         <div className={cn(
-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
+            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
             "grainy group cursor-pointer"
         )}>
             {/* Gradient Background on Hover */}
@@ -88,7 +89,7 @@ export function TrackPortfolioCard({ stepNumber }: CardProps) {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs text-muted-foreground">Total Balance</p>
-                            <p className="text-xl font-bold">$13,450.00</p>
+                            <p className="text-xl font-bold">$17,525.00</p>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-muted-foreground">24h Change</p>
@@ -115,14 +116,12 @@ export function TrackPortfolioCard({ stepNumber }: CardProps) {
                             )}
                         >
                             <div className="flex items-center gap-3">
-                                <div
-                                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                    style={{ backgroundColor: `${asset.color}20` }}
-                                >
-                                    <span className="text-xs font-bold" style={{ color: asset.color }}>
-                                        {asset.symbol.slice(0, 2)}
-                                    </span>
-                                </div>
+                                <TokenDisplay
+                                    tokenIcon={asset.tokenIcon}
+                                    size="md"
+                                    compact
+                                    showChainBadge={false}
+                                />
                                 <div>
                                     <p className="text-sm font-medium">{asset.symbol}</p>
                                     <p className="text-[10px] text-muted-foreground">{asset.balance}</p>

@@ -40,14 +40,13 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
             {/* Title */}
             <h3 className="text-2xl md:text-3xl font-bold mb-2">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-primary">
-                    DeFi for your users, at no cost.
+                    The Ultimate Intent API
                 </span>
             </h3>
 
             {/* Description */}
             <p className="text-muted-foreground mb-4 leading-relaxed">
-                Use the same API that powers Intent Protocol. Join leading teams who trust the API
-                to access deep crypto liquidity.
+                Enable lightning-fast, zero-slippage swaps for your users. Integrate our unified API to route BCH, Solana, and Movement liquidity instantly.
             </p>
 
             {/* CTA Button */}

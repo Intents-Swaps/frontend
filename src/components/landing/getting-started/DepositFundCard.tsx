@@ -16,35 +16,35 @@ interface CardProps {
 // Chain data with logos
 const CHAINS = [
     {
+        name: 'Bitcoin Cash',
+        color: '#0AC18E',
+        logo: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg',
+        shortName: 'BCH'
+    },
+    {
         name: 'Solana',
         color: '#9945FF',
-        logo: '/images/chains/solana.svg',
+        logo: '/assets/solanaLogo.png',
         shortName: 'SOL'
     },
     {
         name: 'Movement',
         color: '#FACC15',
-        logo: '/images/chains/movement.png',
+        logo: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
         shortName: 'MOVE'
     },
     {
         name: 'Ethereum',
         color: '#627EEA',
-        logo: '/images/chains/ethereum.svg',
+        logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
         shortName: 'ETH'
-    },
-    {
-        name: 'Aptos',
-        color: '#66C7A4',
-        logo: '/images/tokens/apt.png',
-        shortName: 'APT'
     },
 ];
 
 export function DepositFundCard({ stepNumber }: CardProps) {
     return (
         <div className={cn(
-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
+            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
             "grainy group cursor-pointer"
         )}>
             {/* Gradient Background on Hover */}
@@ -126,19 +126,21 @@ export function DepositFundCard({ stepNumber }: CardProps) {
                                     <img
                                         src={chain.logo}
                                         alt={chain.name}
-                                        className="w-7 h-7 object-contain"
+                                        className="w-8 h-8 object-contain z-10"
                                         onError={(e) => {
-                                            e.currentTarget.src = '';
-                                            e.currentTarget.className = 'hidden';
+                                            e.currentTarget.style.display = 'none';
+                                            if (e.currentTarget.nextElementSibling) {
+                                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                                            }
                                         }}
                                     />
                                     {/* Fallback text */}
-                                    <span
-                                        className="text-xs font-bold absolute inset-0 flex items-center justify-center"
+                                    <div
+                                        className="absolute inset-0 hidden items-center justify-center font-bold text-xs"
                                         style={{ color: chain.color }}
                                     >
                                         {chain.shortName}
-                                    </span>
+                                    </div>
                                 </motion.div>
                             );
                         })}
