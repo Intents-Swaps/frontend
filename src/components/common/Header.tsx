@@ -37,7 +37,6 @@ export function Header() {
 
     const dropdownItems = [
         { name: 'Oracle', path: '/oracle' },
-        { name: 'Monitor', path: '/monitor' },
         { name: 'Knowledge Base', path: '/kb' },
     ];
 

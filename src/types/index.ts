@@ -75,5 +75,6 @@ export interface BCHOrder {
         destFillTx?: string;
         destTimelock?: number;
         direction?: string;        // e.g. 'BCH_TO_SOL', 'SOL_TO_BCH', etc.
+        solMaker?: string;
     };
 }
