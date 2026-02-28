@@ -1,0 +1,2844 @@
+diff --git a/index.html b/index.html
+index d4aa821..e59fc92 100644
+--- a/index.html
++++ b/index.html
+@@ -1,13 +1,16 @@
+ <!doctype html>
+ <html lang="en">
+-  <head>
+-    <meta charset="UTF-8" />
+-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Intent Protocol</title>
+-  </head>
+-  <body>
+-    <div id="root"></div>
+-    <script type="module" src="/src/main.tsx"></script>
+-  </body>
+-</html>
++
++<head>
++  <meta charset="UTF-8" />
++  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>Intent Protocol</title>
++</head>
++
++<body>
++  <div id="root"></div>
++  <script type="module" src="/src/main.tsx"></script>
++</body>
++
++</html>
+\ No newline at end of file
+diff --git a/src/App.tsx b/src/App.tsx
+index 196cb18..e4367aa 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -15,6 +15,7 @@ import CrossOrders from "./pages/CrossOrders"
+ import PortfolioPage from './pages/PortfolioPage';
+ import ProPage from "./pages/ProPage"
+ import { MonitorPage } from "./pages/MonitorPage"
++import { SolverPage } from "./pages/SolverPage"
+ 
+ import TermsOfService from '@/pages/TermsOfService';
+ import PrivacyPolicy from '@/pages/PrivacyPolicy';
+@@ -92,6 +93,15 @@ function App() {
+                                                 </main>
+                                             </div>
+                                         } />
++                                        {/* Solver page — hidden from menu */}
++                                        <Route path="/solver" element={
++                                            <div className="flex flex-col min-h-screen">
++                                                <Header />
++                                                <main className="flex-1 container mx-auto p-4 md:p-8 mt-20 max-w-[1400px]">
++                                                    <SolverPage />
++                                                </main>
++                                            </div>
++                                        } />
+                                         <Route path="/oracle" element={
+                                             <div className="flex flex-col min-h-screen">
+                                                 <Header />
+diff --git a/src/components/bch-swap/BCHSwapCard.tsx b/src/components/bch-swap/BCHSwapCard.tsx
+index 347bf14..92e9c92 100644
+--- a/src/components/bch-swap/BCHSwapCard.tsx
++++ b/src/components/bch-swap/BCHSwapCard.tsx
+@@ -11,6 +11,7 @@ import { BCHTokenSelector, BCH_TOKENS, SOLANA_TOKENS, ALL_BCH_SWAP_TOKENS } from
+ import { useBCHWallet } from '@/context/BCHWalletProvider';
+ import { useBCHSwap } from '@/context/BCHSwapContext';
+ import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
++import { useWallet as useMovementWallet } from '@/context/wallet-provider';
+ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+ import { PriceService, PRICE_FEEDS } from '@/lib/pyth';
+ import { CauldronService } from '@/lib/cauldron';
+@@ -48,6 +49,7 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps)
+     const bchWallet = useBCHWallet();
+     const { detectSwapType, executeSwap, isLoading, swapStep } = useBCHSwap();
+     const solanaWallet = useSolanaWallet();
++    const { account: movementAccount } = useMovementWallet();
+ 
+     // Auto-detect swap type
+     const swapType: BCHSwapType = useMemo(() => {
+@@ -199,9 +201,8 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps)
+             recipientAddress = solanaWallet.publicKey.toBase58();
+         } else if ((swapType === 'sol-to-bch' || swapType === 'mov-to-bch') && bchWallet.address) {
+             recipientAddress = bchWallet.address;
+-        } else if (swapType === 'bch-to-mov') {
+-            // TODO: Use integrated Movement wallet address when available
+-            recipientAddress = '';
++        } else if (swapType === 'bch-to-mov' && movementAccount?.address) {
++            recipientAddress = movementAccount.address.toString();
+         }
+ 
+         try {
+diff --git a/src/components/bch-swap/LimitOrderHistory.tsx b/src/components/bch-swap/LimitOrderHistory.tsx
+index c897153..948783d 100644
+--- a/src/components/bch-swap/LimitOrderHistory.tsx
++++ b/src/components/bch-swap/LimitOrderHistory.tsx
+@@ -1,39 +1,66 @@
+-import { useEffect } from 'react';
++import { useEffect, useState, useRef } from 'react';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+ import { Card, CardContent } from '@/components/ui/card';
+ import { Badge } from '@/components/ui/badge';
+-import { ExternalLink, Clock, CheckCircle2, XCircle, BoxSelect, RefreshCw, Zap, ArrowRight } from 'lucide-react';
++import { ExternalLink, Clock, CheckCircle2, XCircle, BoxSelect, RefreshCw, Zap, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+ import { Button } from '@/components/ui/button';
+ import { useBCHSwap } from '@/context/BCHSwapContext';
+-import { BCHOrder } from '@/types';
++import { BCHOrder, Token } from '@/types';
+ 
++const ITEMS_PER_PAGE = 8;
++
++// ============================================================================
++// Chain icon mapping
++// ============================================================================
++const CHAIN_ICONS: Record<string, string> = {
++    bch: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
++    solana: '/assets/solanaLogo.png',
++    movement: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
++};
++
++function getChainIcon(chain?: string): string | null {
++    if (!chain) return null;
++    return CHAIN_ICONS[chain] || null;
++}
++
++function getChainFromSwapType(swapType: string, side: 'sell' | 'buy'): string | null {
++    const map: Record<string, [string, string]> = {
++        'same-chain': ['bch', 'bch'],
++        'bch-to-sol': ['bch', 'solana'],
++        'sol-to-bch': ['solana', 'bch'],
++        'bch-to-mov': ['bch', 'movement'],
++        'mov-to-bch': ['movement', 'bch'],
++    };
++    const pair = map[swapType];
++    return pair ? pair[side === 'sell' ? 0 : 1] : null;
++}
++
++// ============================================================================
++// Helpers
++// ============================================================================
+ function formatTime(ts: number) {
+     const d = new Date(ts);
+     return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+ }
+ 
+-function shortenAddr(addr?: string) {
+-    if (!addr) return '—';
+-    return `${addr.slice(0, 16)}…${addr.slice(-6)}`;
+-}
+-
+ function shortenTx(tx?: string) {
+     if (!tx) return '';
+     return `${tx.slice(0, 8)}…${tx.slice(-6)}`;
+ }
+ 
+ function statusBadge(status: BCHOrder['status']) {
++    const cls = "gap-1 text-[10px] lg:text-xs";
+     switch (status) {
+-        case 'pending': return <Badge variant="outline" className="border-amber-500/50 text-amber-400 gap-1"><Clock className="h-3 w-3" />Pending</Badge>;
++        case 'pending': return <Badge variant="outline" className={`border-amber-500/50 text-amber-400 ${cls}`}><Clock className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Pending</Badge>;
+         case 'claimable': return (
+-            <Badge variant="outline" className="border-blue-500/50 text-blue-400 gap-1 animate-pulse">
+-                <Zap className="h-3 w-3" />Claim Ready
++            <Badge variant="outline" className={`border-blue-500/50 text-blue-400 animate-pulse ${cls}`}>
++                <Zap className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Claim Ready
+             </Badge>
+         );
+-        case 'claimed': return <Badge variant="outline" className="border-teal-500/50 text-teal-400 gap-1"><CheckCircle2 className="h-3 w-3" />Claimed</Badge>;
+-        case 'filled': return <Badge variant="outline" className="border-emerald-500/50 text-emerald-400 gap-1"><CheckCircle2 className="h-3 w-3" />Completed</Badge>;
+-        case 'cancelled': return <Badge variant="outline" className="border-red-500/50 text-red-400 gap-1"><XCircle className="h-3 w-3" />Cancelled</Badge>;
+-        case 'expired': return <Badge variant="outline" className="border-gray-500/50 text-gray-400 gap-1"><XCircle className="h-3 w-3" />Expired</Badge>;
++        case 'claimed': return <Badge variant="outline" className={`border-teal-500/50 text-teal-400 ${cls}`}><CheckCircle2 className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Claimed</Badge>;
++        case 'filled': return <Badge variant="outline" className={`border-emerald-500/50 text-emerald-400 ${cls}`}><CheckCircle2 className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Completed</Badge>;
++        case 'cancelled': return <Badge variant="outline" className={`border-red-500/50 text-red-400 ${cls}`}><XCircle className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Cancelled</Badge>;
++        case 'expired': return <Badge variant="outline" className={`border-gray-500/50 text-gray-400 ${cls}`}><XCircle className="h-3 w-3 lg:h-3.5 lg:w-3.5" />Expired</Badge>;
+         default: return <Badge variant="outline">{status}</Badge>;
+     }
+ }
+@@ -49,14 +76,41 @@ function swapTypeBadge(order: BCHOrder) {
+     const label = labels[order.swapType] || order.swapType;
+     const isMove = order.swapType.includes('mov');
+     return (
+-        <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${isMove ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-violet-500/10 text-violet-400 border-violet-500/20'}`}>
++        <Badge variant="secondary" className={`text-[10px] lg:text-xs px-1.5 py-0 ${isMove ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-violet-500/10 text-violet-400 border-violet-500/20'}`}>
+             {label}
+         </Badge>
+     );
+ }
+ 
++// ============================================================================
++// Token icon with chain badge — larger on desktop
++// ============================================================================
++function TokenIcon({ token, chain }: { token?: Token; chain?: string | null }) {
++    const iconUrl = token?.icon;
++    const chainIcon = chain ? getChainIcon(chain) : null;
++    const fallback = token?.symbol?.[0] || '?';
++
++    return (
++        <div className="relative flex-shrink-0">
++            <div className="h-7 w-7 lg:h-8 lg:w-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
++                {iconUrl ? (
++                    <img src={iconUrl} alt={token?.symbol} className="h-5 w-5 lg:h-5.5 lg:w-5.5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
++                ) : null}
++                {!iconUrl && <span className="text-[9px] lg:text-[10px] font-bold text-muted-foreground">{fallback}</span>}
++            </div>
++            {chainIcon && (
++                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 lg:h-4 lg:w-4 rounded-full bg-[#0A0A0A] border border-white/10 flex items-center justify-center overflow-hidden">
++                    <img src={chainIcon} alt={chain || ''} className="h-2 w-2 lg:h-2.5 lg:w-2.5 object-contain" />
++                </div>
++            )}
++        </div>
++    );
++}
++
++// ============================================================================
++// Order Row — responsive sizing for large screens
++// ============================================================================
+ function OrderRow({ order, onClaim, isClaiming }: { order: BCHOrder; onClaim?: (id: string) => void; isClaiming?: boolean }) {
+-    // Build explorer links
+     const sourceExplorerUrl = order.explorerUrl
+         || (order.txid ? `https://chipnet.chaingraph.cash/tx/${order.txid}` : undefined)
+         || (order.contractAddress ? `https://chipnet.chaingraph.cash/address/${order.contractAddress}` : undefined);
+@@ -70,116 +124,183 @@ function OrderRow({ order, onClaim, isClaiming }: { order: BCHOrder; onClaim?: (
+                     ? `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`
+                     : undefined);
+ 
++    const sellChain = getChainFromSwapType(order.swapType, 'sell') || order.sellToken?.chain;
++    const buyChain = getChainFromSwapType(order.swapType, 'buy') || order.buyToken?.chain;
++
+     return (
+-        <div className="flex items-center justify-between py-3 px-4 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition-colors">
+-            <div className="flex-1 min-w-0">
+-                <div className="flex items-center gap-2 mb-1 flex-wrap">
+-                    <span className="text-sm font-medium text-foreground">
+-                        {order.sellToken?.symbol || '?'} → {order.buyToken?.symbol || '?'}
+-                    </span>
+-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+-                        {order.orderType === 'limit' ? 'Limit' : 'Market'}
+-                    </Badge>
+-                    {swapTypeBadge(order)}
+-                    {statusBadge(order.status)}
+-                </div>
+-                <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
+-                    <span>{order.sellAmount} {order.sellToken?.symbol} for {order.buyAmount} {order.buyToken?.symbol}</span>
+-                    <span>·</span>
+-                    <span>{formatTime(order.createdAt)}</span>
++        <div className="flex items-center justify-between py-3 lg:py-3.5 px-3 lg:px-4 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.02] transition-colors">
++            <div className="flex items-center gap-2.5 lg:gap-3 flex-1 min-w-0">
++                {/* Token pair icons */}
++                <div className="flex items-center -space-x-2 flex-shrink-0">
++                    <TokenIcon token={order.sellToken} chain={sellChain} />
++                    <TokenIcon token={order.buyToken} chain={buyChain} />
+                 </div>
+ 
+-                {/* Transaction links for completed swaps */}
+-                {(order.status === 'filled' || order.status === 'claimed') && (sourceExplorerUrl || destExplorerUrl) && (
+-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+-                        {sourceExplorerUrl && (
+-                            <a
+-                                href={sourceExplorerUrl}
+-                                target="_blank"
+-                                rel="noopener noreferrer"
+-                                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-emerald-400 transition-colors"
+-                            >
+-                                Source TX {shortenTx(order.txid)} <ExternalLink className="h-3 w-3" />
+-                            </a>
+-                        )}
+-                        {sourceExplorerUrl && destExplorerUrl && (
+-                            <ArrowRight className="h-3 w-3 text-muted-foreground/40" />
+-                        )}
+-                        {destExplorerUrl && (
+-                            <a
+-                                href={destExplorerUrl}
+-                                target="_blank"
+-                                rel="noopener noreferrer"
+-                                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-emerald-400 transition-colors"
+-                            >
+-                                Dest TX {shortenTx(order.fillTxid)} <ExternalLink className="h-3 w-3" />
+-                            </a>
+-                        )}
++                <div className="min-w-0">
++                    <div className="flex items-center gap-1.5 lg:gap-2 mb-0.5 flex-wrap">
++                        <span className="text-xs lg:text-sm font-medium text-foreground">
++                            {order.sellAmount} {order.sellToken?.symbol || '?'}
++                        </span>
++                        <ArrowRight className="h-3 w-3 lg:h-3.5 lg:w-3.5 text-muted-foreground flex-shrink-0" />
++                        <span className="text-xs lg:text-sm font-medium text-foreground">
++                            {Number(order.buyAmount).toFixed(4)} {order.buyToken?.symbol || '?'}
++                        </span>
+                     </div>
+-                )}
+-
+-                {order.contractAddress && order.status === 'pending' && (
+-                    <div className="text-[11px] text-muted-foreground/60 mt-0.5 font-mono">
+-                        {shortenAddr(order.contractAddress)}
++                    <div className="flex items-center gap-1.5 flex-wrap">
++                        <Badge variant="secondary" className="text-[9px] lg:text-[10px] px-1 lg:px-1.5 py-0 h-3.5 lg:h-4">
++                            {order.orderType === 'limit' ? 'Limit' : 'Market'}
++                        </Badge>
++                        {swapTypeBadge(order)}
++                        {statusBadge(order.status)}
+                     </div>
+-                )}
++                    <div className="text-[10px] lg:text-[11px] text-muted-foreground mt-0.5">
++                        {formatTime(order.createdAt)}
++                    </div>
++                </div>
+             </div>
+ 
+-            <div className="flex items-center gap-2 ml-3">
+-                {/* Claim button for claimable orders — only when secret is available */}
++            <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                 {order.status === 'claimable' && onClaim && order.claimData?.secret && (
+                     <Button
+                         size="sm"
+                         variant="default"
+-                        className="h-8 gap-1.5 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white text-xs font-medium shadow-lg shadow-blue-500/25 animate-pulse"
++                        className="h-7 lg:h-8 gap-1 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white text-[10px] lg:text-xs font-medium shadow-lg shadow-blue-500/25 animate-pulse"
+                         onClick={() => onClaim(order.id)}
+                         disabled={isClaiming}
+                     >
+-                        <Zap className="h-3.5 w-3.5" />
+-                        {isClaiming ? 'Claiming...' : 'Claim'}
++                        <Zap className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
++                        {isClaiming ? '...' : 'Claim'}
+                     </Button>
+                 )}
+ 
+-                {/* Explorer link for non-completed pending/claimable */}
+                 {sourceExplorerUrl && order.status !== 'filled' && order.status !== 'claimed' && (
+                     <a
+                         href={sourceExplorerUrl}
+                         target="_blank"
+                         rel="noopener noreferrer"
+-                        className="p-1.5 rounded-md hover:bg-white/[0.06] text-muted-foreground hover:text-emerald-400 transition-colors"
++                        className="p-1 lg:p-1.5 rounded-md hover:bg-white/[0.06] text-muted-foreground hover:text-emerald-400 transition-colors"
+                         title="View on Explorer"
+                     >
+-                        <ExternalLink className="h-4 w-4" />
++                        <ExternalLink className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                     </a>
+                 )}
++
++                {(order.status === 'filled' || order.status === 'claimed') && (sourceExplorerUrl || destExplorerUrl) && (
++                    <div className="flex items-center gap-2">
++                        {sourceExplorerUrl && (
++                            <a href={sourceExplorerUrl} target="_blank" rel="noopener noreferrer"
++                                className="text-xs lg:text-sm text-muted-foreground hover:text-emerald-400 transition-colors flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/[0.04]">
++                                Source <ExternalLink className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
++                            </a>
++                        )}
++                        {destExplorerUrl && (
++                            <a href={destExplorerUrl} target="_blank" rel="noopener noreferrer"
++                                className="text-xs lg:text-sm text-muted-foreground hover:text-emerald-400 transition-colors flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/[0.04]">
++                                Dest <ExternalLink className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
++                            </a>
++                        )}
++                    </div>
++                )}
+             </div>
+         </div>
+     );
+ }
+ 
++// ============================================================================
++// Pagination Component
++// ============================================================================
++function Pagination({ current, total, onChange }: { current: number; total: number; onChange: (page: number) => void }) {
++    if (total <= 1) return null;
++
++    const pages: (number | '...')[] = [];
++    if (total <= 5) {
++        for (let i = 1; i <= total; i++) pages.push(i);
++    } else {
++        pages.push(1);
++        if (current > 3) pages.push('...');
++        for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
++        if (current < total - 2) pages.push('...');
++        pages.push(total);
++    }
++
++    return (
++        <div className="flex items-center justify-center gap-1 py-2.5 px-3 border-t border-white/[0.06] bg-card/50 backdrop-blur-sm">
++            <Button
++                variant="ghost" size="icon"
++                className="h-7 w-7 text-muted-foreground hover:text-emerald-400 disabled:opacity-30"
++                disabled={current === 1}
++                onClick={() => onChange(current - 1)}
++            >
++                <ChevronLeft className="h-3.5 w-3.5" />
++            </Button>
++            {pages.map((p, i) =>
++                p === '...' ? (
++                    <span key={`dots-${i}`} className="text-[10px] text-muted-foreground px-1">…</span>
++                ) : (
++                    <button
++                        key={p}
++                        onClick={() => onChange(p)}
++                        className={`h-7 min-w-[28px] rounded-md text-[11px] font-medium transition-colors ${p === current
++                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
++                            : 'text-muted-foreground hover:text-foreground hover:bg-white/[0.04]'
++                            }`}
++                    >
++                        {p}
++                    </button>
++                )
++            )}
++            <Button
++                variant="ghost" size="icon"
++                className="h-7 w-7 text-muted-foreground hover:text-emerald-400 disabled:opacity-30"
++                disabled={current === total}
++                onClick={() => onChange(current + 1)}
++            >
++                <ChevronRight className="h-3.5 w-3.5" />
++            </Button>
++        </div>
++    );
++}
++
++// ============================================================================
++// Empty State
++// ============================================================================
+ function EmptyState({ message }: { message: string }) {
+     return (
+-        <div className="flex flex-col items-center justify-center py-12 text-center">
+-            <div className="relative opacity-30 mb-4">
+-                <BoxSelect className="h-24 w-24 text-muted-foreground" strokeWidth={0.5} />
++        <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
++            <div className="relative opacity-30 mb-3">
++                <BoxSelect className="h-16 w-16 lg:h-20 lg:w-20 text-muted-foreground" strokeWidth={0.5} />
+             </div>
+-            <h3 className="text-lg font-semibold text-foreground mb-1">{message}</h3>
+-            <p className="text-sm text-muted-foreground">
++            <h3 className="text-sm lg:text-base font-semibold text-foreground mb-1">{message}</h3>
++            <p className="text-xs text-muted-foreground">
+                 Create a limit order or market swap to get started.
+             </p>
+         </div>
+     );
+ }
+ 
++// ============================================================================
++// Green-themed scrollbar styles (inline)
++// ============================================================================
++const greenScrollStyle: React.CSSProperties = {};
++const greenScrollCSS = `
++.green-scroll::-webkit-scrollbar { width: 6px; }
++.green-scroll::-webkit-scrollbar-track { background: transparent; }
++.green-scroll::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 3px; }
++.green-scroll::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.5); }
++.green-scroll { scrollbar-width: thin; scrollbar-color: rgba(16, 185, 129, 0.3) transparent; }
++`;
++
++// ============================================================================
++// Main Component
++// ============================================================================
+ export function LimitOrderHistory() {
+     const { pendingOrders, completedOrders, refreshOrders, claimOrder, isLoading } = useBCHSwap();
++    const [openPage, setOpenPage] = useState(1);
++    const [historyPage, setHistoryPage] = useState(1);
+ 
+-    // Auto-refresh every 15 seconds
+     useEffect(() => {
+-        refreshOrders(); // Initial fetch
+-        const interval = setInterval(() => {
+-            refreshOrders();
+-        }, 15000);
++        refreshOrders();
++        const interval = setInterval(() => { refreshOrders(); }, 15000);
+         return () => clearInterval(interval);
+     }, [refreshOrders]);
+ 
+@@ -187,80 +308,97 @@ export function LimitOrderHistory() {
+     const claimableCount = pendingOrders.filter(o => o.status === 'claimable').length;
+     const historyCount = completedOrders.length;
+ 
++    // Sort and paginate open orders
++    const sortedOpen = [...pendingOrders].sort((a, b) => {
++        if (a.status === 'claimable' && b.status !== 'claimable') return -1;
++        if (a.status !== 'claimable' && b.status === 'claimable') return 1;
++        return b.createdAt - a.createdAt;
++    });
++    const openTotalPages = Math.max(1, Math.ceil(sortedOpen.length / ITEMS_PER_PAGE));
++    const pagedOpen = sortedOpen.slice((openPage - 1) * ITEMS_PER_PAGE, openPage * ITEMS_PER_PAGE);
++
++    const sortedHistory = [...completedOrders].sort((a, b) => b.createdAt - a.createdAt);
++    const historyTotalPages = Math.max(1, Math.ceil(sortedHistory.length / ITEMS_PER_PAGE));
++    const pagedHistory = sortedHistory.slice((historyPage - 1) * ITEMS_PER_PAGE, historyPage * ITEMS_PER_PAGE);
++
+     return (
+-        <Card className="w-full h-full min-h-[500px] border-muted/50 bg-card/80 backdrop-blur-sm shadow-lg flex flex-col">
+-            <CardContent className="p-0 flex-1 flex flex-col">
+-                <Tabs defaultValue="open" className="w-full h-full flex flex-col">
+-                    <div className="border-b border-white/[0.06] px-4 pt-4 flex items-center justify-between">
+-                        <TabsList className="bg-transparent gap-6 h-auto p-0 justify-start">
+-                            <TabsTrigger
+-                                value="open"
+-                                className="px-0 py-2 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-muted-foreground hover:text-foreground text-sm font-medium"
+-                            >
+-                                Open ({openCount})
+-                                {claimableCount > 0 && (
+-                                    <span className="ml-1.5 inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold animate-pulse">
+-                                        {claimableCount}
+-                                    </span>
+-                                )}
+-                            </TabsTrigger>
+-                            <TabsTrigger
+-                                value="history"
+-                                className="px-0 py-2 border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-muted-foreground hover:text-foreground text-sm font-medium"
++        <>
++            <style>{greenScrollCSS}</style>
++            <Card className="w-full border-muted/50 bg-card/80 backdrop-blur-sm shadow-lg flex flex-col" style={{ height: 'var(--swap-card-height, auto)', minHeight: '480px' }}>
++                <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
++                    <Tabs defaultValue="open" className="w-full h-full flex flex-col">
++                        {/* Tab header — compact, no extra top padding */}
++                        <div className="border-b border-white/[0.06] px-4 flex items-center justify-between">
++                            <TabsList className="bg-transparent gap-6 h-auto p-0 justify-start">
++                                <TabsTrigger
++                                    value="open"
++                                    className="px-0 py-2.5 border-b-2 border-transparent data-[state=active]:border-emerald-500 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-muted-foreground hover:text-foreground text-sm lg:text-base font-medium"
++                                >
++                                    Open ({openCount})
++                                    {claimableCount > 0 && (
++                                        <span className="ml-1.5 inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold animate-pulse">
++                                            {claimableCount}
++                                        </span>
++                                    )}
++                                </TabsTrigger>
++                                <TabsTrigger
++                                    value="history"
++                                    className="px-0 py-2.5 border-b-2 border-transparent data-[state=active]:border-emerald-500 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none text-muted-foreground hover:text-foreground text-sm lg:text-base font-medium"
++                                >
++                                    Orders ({historyCount})
++                                </TabsTrigger>
++                            </TabsList>
++                            <Button
++                                variant="ghost"
++                                size="icon"
++                                className="h-7 w-7 lg:h-8 lg:w-8 text-muted-foreground hover:text-emerald-400"
++                                onClick={() => refreshOrders()}
++                                disabled={isLoading}
+                             >
+-                                Orders history ({historyCount})
+-                            </TabsTrigger>
+-                        </TabsList>
+-                        <Button
+-                            variant="ghost"
+-                            size="icon"
+-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+-                            onClick={() => refreshOrders()}
+-                            disabled={isLoading}
+-                        >
+-                            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+-                        </Button>
+-                    </div>
++                                <RefreshCw className={`h-3.5 w-3.5 lg:h-4 lg:w-4 ${isLoading ? 'animate-spin' : ''}`} />
++                            </Button>
++                        </div>
+ 
+-                    <div className="flex-1 flex flex-col overflow-auto">
+-                        <TabsContent value="open" className="m-0 flex-1">
+-                            {openCount === 0 ? (
+-                                <EmptyState message="No open orders" />
+-                            ) : (
+-                                <div className="divide-y divide-white/[0.04]">
+-                                    {/* Show claimable orders first */}
+-                                    {pendingOrders
+-                                        .sort((a, b) => {
+-                                            if (a.status === 'claimable' && b.status !== 'claimable') return -1;
+-                                            if (a.status !== 'claimable' && b.status === 'claimable') return 1;
+-                                            return b.createdAt - a.createdAt;
+-                                        })
+-                                        .map(order => (
+-                                            <OrderRow
+-                                                key={order.id}
+-                                                order={order}
+-                                                onClaim={claimOrder}
+-                                                isClaiming={isLoading}
+-                                            />
+-                                        ))}
+-                                </div>
+-                            )}
+-                        </TabsContent>
++                        {/* Scrollable content area */}
++                        <div className="flex-1 flex flex-col overflow-hidden">
++                            <TabsContent value="open" className="mt-0 flex-1 flex flex-col overflow-hidden data-[state=inactive]:hidden">
++                                {openCount === 0 ? (
++                                    <EmptyState message="No open orders" />
++                                ) : (
++                                    <>
++                                        <div className="flex-1 overflow-y-auto green-scroll">
++                                            {pagedOpen.map(order => (
++                                                <OrderRow
++                                                    key={order.id}
++                                                    order={order}
++                                                    onClaim={claimOrder}
++                                                    isClaiming={isLoading}
++                                                />
++                                            ))}
++                                        </div>
++                                        <Pagination current={openPage} total={openTotalPages} onChange={setOpenPage} />
++                                    </>
++                                )}
++                            </TabsContent>
+ 
+-                        <TabsContent value="history" className="m-0 flex-1">
+-                            {historyCount === 0 ? (
+-                                <EmptyState message="No order history" />
+-                            ) : (
+-                                <div className="divide-y divide-white/[0.04]">
+-                                    {completedOrders.map(order => (
+-                                        <OrderRow key={order.id} order={order} />
+-                                    ))}
+-                                </div>
+-                            )}
+-                        </TabsContent>
+-                    </div>
+-                </Tabs>
+-            </CardContent>
+-        </Card>
++                            <TabsContent value="history" className="mt-0 flex-1 flex flex-col overflow-hidden data-[state=inactive]:hidden">
++                                {historyCount === 0 ? (
++                                    <EmptyState message="No order history" />
++                                ) : (
++                                    <>
++                                        <div className="flex-1 overflow-y-auto green-scroll">
++                                            {pagedHistory.map(order => (
++                                                <OrderRow key={order.id} order={order} />
++                                            ))}
++                                        </div>
++                                        <Pagination current={historyPage} total={historyTotalPages} onChange={setHistoryPage} />
++                                    </>
++                                )}
++                            </TabsContent>
++                        </div>
++                    </Tabs>
++                </CardContent>
++            </Card>
++        </>
+     );
+ }
+diff --git a/src/components/explore/TransactionsTable.tsx b/src/components/explore/TransactionsTable.tsx
+index 94e6914..a56adc2 100644
+--- a/src/components/explore/TransactionsTable.tsx
++++ b/src/components/explore/TransactionsTable.tsx
+@@ -1,78 +1,243 @@
+ import { useEffect, useState } from 'react';
+ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+ import { Badge } from '@/components/ui/badge';
++import { Button } from '@/components/ui/button';
+ import { cn } from '@/lib/utils';
+ import { ChainFilter } from '@/pages/ExplorePage';
+ import { useSwap } from '@/context/SwapContext';
+-import { ArrowRight, Clock, ExternalLink, Loader2 } from 'lucide-react';
++import { ArrowRight, ChevronLeft, ChevronRight, Clock, ExternalLink, Loader2, ArrowUpDown } from 'lucide-react';
++import { BCHOrder } from '@/types';
++import axios from 'axios';
++
++// ============================================================================
++// Token & Chain icon maps
++// ============================================================================
++const CHAIN_ICONS: Record<string, string> = {
++    'Bitcoin Cash': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
++    'Solana': '/assets/solanaLogo.png',
++    'Movement': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
++};
++
++const TOKEN_ICONS: Record<string, string> = {
++    'BCH': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
++    'SOL': '/assets/solanaLogo.png',
++    'MOVE': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
++    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
++    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
++    'USDC.e': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDC.png',
++    'USDT.e': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDT.png',
++};
+ 
+-// Define the transaction shape for the table
+ interface ExplorerTx {
+     id: string;
+     timestamp: number;
+     sellToken: string;
++    sellIcon?: string;
+     sellAmount: number;
+     buyToken: string;
++    buyIcon?: string;
+     buyAmount: number;
+     usdValue: number;
+     wallet: string;
+     chain: 'Movement' | 'Solana' | 'Bitcoin Cash';
+     txHash?: string;
++    explorerUrl?: string;
+     type: string;
++    status: string;
+ }
+ 
+-// Helper to calculate "time ago"
++const BCH_ORDERS_KEY = 'bch_swap_orders';
++const ITEMS_PER_PAGE = 10;
++
+ function getTimeAgo(timestamp: number): string {
+     const diff = Date.now() - timestamp;
+-    if (diff < 60000) return `${Math.floor(diff / 1000)}s`;
+-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+-    return `${Math.floor(diff / 86400000)}d`;
++    if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
++    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
++    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
++    return `${Math.floor(diff / 86400000)}d ago`;
++}
++
++function getChainFromSwapType(swapType: string): 'Movement' | 'Solana' | 'Bitcoin Cash' {
++    if (swapType.includes('mov')) return 'Movement';
++    if (swapType.includes('sol')) return 'Solana';
++    return 'Bitcoin Cash';
++}
++
++function getExplorerUrl(order: BCHOrder): string | undefined {
++    if (order.explorerUrl) return order.explorerUrl;
++    if (order.txid) {
++        if (order.swapType.includes('sol')) return `https://explorer.solana.com/tx/${order.txid}?cluster=devnet`;
++        if (order.swapType.includes('mov')) return `https://explorer.movementnetwork.xyz/txn/${order.txid}?network=testnet`;
++        return `https://chipnet.chaingraph.cash/tx/${order.txid}`;
++    }
++    if (order.contractAddress) return `https://chipnet.chaingraph.cash/address/${order.contractAddress}`;
++    return undefined;
++}
++
++function TxTokenIcon({ symbol, icon }: { symbol: string; icon?: string }) {
++    const url = icon || TOKEN_ICONS[symbol];
++    return (
++        <div className="h-7 w-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
++            {url ? (
++                <img src={url} alt={symbol} className="h-5 w-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
++            ) : (
++                <span className="text-[9px] font-bold text-muted-foreground">{symbol?.[0] || '?'}</span>
++            )}
++        </div>
++    );
++}
++
++function statusColor(status: string): string {
++    const s = status.toLowerCase();
++    if (s === 'completed' || s === 'claimed' || s === 'filled') return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
++    if (s === 'pending') return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
++    if (s === 'claimable') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
++    if (s === 'failed' || s === 'cancelled') return 'bg-red-500/10 text-red-400 border-red-500/20';
++    return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+ }
+ 
+ export function TransactionsTable({ activeChain, refreshTrigger }: { activeChain: ChainFilter, refreshTrigger: number }) {
+     const { fetchOrderHistory } = useSwap();
+     const [transactions, setTransactions] = useState<ExplorerTx[]>([]);
+     const [isLoading, setIsLoading] = useState(true);
++    const [currentPage, setCurrentPage] = useState(1);
++
++    const crossChainRelayerUrl = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || 'https://cross-chain-relayer-production-a93e.up.railway.app';
+ 
+     useEffect(() => {
+         let isMounted = true;
+         const loadOrders = async () => {
+             setIsLoading(true);
++            const allTxs: ExplorerTx[] = [];
++
++            // 1. Movement swap history
+             try {
+                 const history = await fetchOrderHistory();
+-                if (!isMounted) return;
++                if (isMounted) {
++                    const moveTxs = history.map((order: any): ExplorerTx => {
++                        const sellSym = order.sellToken?.symbol || order.sell_token || 'MOVE';
++                        const buySym = order.buyToken?.symbol || order.buy_token || 'USDC';
++                        const mockUsdPrice = sellSym === 'MOVE' ? 0.8 : sellSym === 'SOL' ? 150 : sellSym === 'BCH' ? 250 : 1;
++                        const st = order.status === 'completed' || order.status === 'filled' || order.status === 'FILLED' ? 'Completed' : order.status || 'Pending';
++                        return {
++                            id: order.id || order.nonce || order.orderId || `move-${Math.random()}`,
++                            timestamp: order.createdAt || order.timestamp || Date.now(),
++                            sellToken: sellSym,
++                            sellIcon: order.sellToken?.icon || TOKEN_ICONS[sellSym],
++                            sellAmount: Number(order.sellAmount || order.sell_amount) || 0,
++                            buyToken: buySym,
++                            buyIcon: order.buyToken?.icon || TOKEN_ICONS[buySym],
++                            buyAmount: Number(order.buyAmount || order.buy_amount) || 0,
++                            usdValue: (Number(order.sellAmount || order.sell_amount) || 0) * mockUsdPrice,
++                            wallet: order.maker ? `${order.maker.slice(0, 6)}...${order.maker.slice(-4)}` : 'Unknown',
++                            chain: 'Movement',
++                            txHash: order.txid || order.fulfillTxId || order.order_hash,
++                            explorerUrl: order.order_hash ? `https://explorer.movementlabs.xyz/txn/${order.order_hash}?network=testnet` : undefined,
++                            type: 'Intent Swap',
++                            status: st,
++                        };
++                    });
++                    allTxs.push(...moveTxs);
++                }
++            } catch (e) { console.error("Failed to fetch Movement txs", e); }
++
++            // 2. BCH orders from localStorage (ALL statuses)
++            try {
++                const saved = localStorage.getItem(BCH_ORDERS_KEY);
++                if (saved) {
++                    const bchOrders: BCHOrder[] = JSON.parse(saved);
++                    const bchTxs = bchOrders.map((order): ExplorerTx => {
++                        const sellSym = order.sellToken?.symbol || '?';
++                        const buySym = order.buyToken?.symbol || '?';
++                        const mockUsdPrice = sellSym === 'BCH' ? 250 : sellSym === 'SOL' ? 150 : sellSym === 'MOVE' ? 0.8 : 1;
++                        const statusMap: Record<string, string> = { pending: 'Pending', filled: 'Completed', claimed: 'Claimed', claimable: 'Claimable', cancelled: 'Failed', expired: 'Expired' };
++                        return {
++                            id: order.id,
++                            timestamp: order.createdAt,
++                            sellToken: sellSym,
++                            sellIcon: order.sellToken?.icon || TOKEN_ICONS[sellSym],
++                            sellAmount: order.sellAmount,
++                            buyToken: buySym,
++                            buyIcon: order.buyToken?.icon || TOKEN_ICONS[buySym],
++                            buyAmount: order.buyAmount,
++                            usdValue: order.sellAmount * mockUsdPrice,
++                            wallet: order.contractAddress ? `${order.contractAddress.slice(0, 10)}...` : 'Local',
++                            chain: getChainFromSwapType(order.swapType),
++                            txHash: order.txid || order.fillTxid,
++                            explorerUrl: getExplorerUrl(order),
++                            type: order.swapType === 'same-chain' ? 'CashToken' : 'Cross-Chain',
++                            status: statusMap[order.status] || order.status,
++                        };
++                    });
++                    allTxs.push(...bchTxs);
++                }
++            } catch (e) { console.error("Failed to load BCH orders", e); }
+ 
+-                const completed = (window as any).bchOrders || []; // Fallback for local orders if no global indexer exists yet
+-                // For a true global explorer, you'd fetch from an indexer backend. 
+-                // Here we piece together what we can from user history if global isn't available.
++            // 3. Cross-chain relayer orders
++            try {
++                const res = await axios.get(`${crossChainRelayerUrl}/orders`);
++                const { active = [], completed = [] } = res.data;
++                const relayerOrders = [...active, ...completed];
++                const ccTxs = relayerOrders.map((intent: any): ExplorerTx => {
++                    const dir = (intent.direction || '').toLowerCase();
++                    const isBchSell = dir.startsWith('bch_');
++                    const isSolSell = dir.startsWith('sol_');
++                    const isMovSell = dir.startsWith('mov_');
++
++                    const sellSym = isBchSell ? 'BCH' : isSolSell ? 'SOL' : isMovSell ? 'MOVE' : '?';
++                    const buySym = dir.endsWith('_bch') ? 'BCH' : dir.endsWith('_sol') ? 'SOL' : dir.endsWith('_mov') ? 'MOVE' : '?';
++
++                    const chain: ExplorerTx['chain'] = isBchSell ? 'Bitcoin Cash' : isSolSell ? 'Solana' : 'Movement';
++
++                    let status = 'Pending';
++                    if (intent.status === 'SOURCE_LOCKED') status = 'Locked';
++                    else if (intent.status === 'DEST_FILLED') status = 'Filled';
++                    else if (intent.status === 'DEST_CLAIMED') status = 'Claimable';
++                    else if (intent.status === 'COMPLETED') status = 'Completed';
++
++                    const sourceId = intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId;
++                    let explorerUrl: string | undefined;
++                    if (sourceId) {
++                        if (isBchSell) explorerUrl = sourceId.startsWith('bchtest:') ? `https://chipnet.chaingraph.cash/address/${sourceId}` : `https://chipnet.chaingraph.cash/tx/${sourceId}`;
++                        else if (isSolSell) explorerUrl = `https://explorer.solana.com/tx/${sourceId}?cluster=devnet`;
++                        else explorerUrl = `https://explorer.movementnetwork.xyz/txn/${sourceId}?network=testnet`;
++                    }
++
++                    const mockUsdPrice = sellSym === 'BCH' ? 250 : sellSym === 'SOL' ? 150 : sellSym === 'MOVE' ? 0.8 : 1;
+ 
+-                const formatted = history.filter(o => o.status === 'completed' || o.status === 'filled').map((order: any): ExplorerTx => {
+-                    const sellSym = order.sellToken?.symbol || 'UNKNOWN';
+-                    const mockUsdPrice = sellSym === 'BCH' ? 250 : sellSym === 'SOL' ? 150 : 1;
+-                    
+                     return {
+-                        id: order.id || order.nonce || order.orderId,
+-                        timestamp: order.createdAt || Date.now(),
++                        id: intent.id,
++                        timestamp: intent.createdAt ? intent.createdAt * 1000 : Date.now(),
+                         sellToken: sellSym,
+-                        sellAmount: Number(order.sellAmount) || 0,
+-                        buyToken: order.buyToken?.symbol || 'UNKNOWN',
+-                        buyAmount: Number(order.buyAmount) || 0,
+-                        usdValue: (Number(order.sellAmount) || 0) * mockUsdPrice,
+-                        wallet: order.maker || 'Unknown Wallet',
+-                        chain: 'Bitcoin Cash', // Assuming primarily BCH-Swap/Relayer for now based on context
+-                        txHash: order.txid || order.fulfillTxId,
+-                        type: order.type || 'Cross-Chain'
++                        sellIcon: TOKEN_ICONS[sellSym],
++                        sellAmount: Number(intent.sellAmount) / 1e8 || 0,
++                        buyToken: buySym,
++                        buyIcon: TOKEN_ICONS[buySym],
++                        buyAmount: Number(intent.buyAmount) / 1e8 || 0,
++                        usdValue: (Number(intent.sellAmount) / 1e8 || 0) * mockUsdPrice,
++                        wallet: intent.makerAddress ? `${intent.makerAddress.slice(0, 8)}...` : 'Relayer',
++                        chain,
++                        txHash: sourceId,
++                        explorerUrl,
++                        type: 'HTLC Swap',
++                        status,
+                     };
+                 });
++                allTxs.push(...ccTxs);
++            } catch (e) { console.error("Failed to fetch cross-chain orders", e); }
+ 
+-                // Sort by time desc
+-                formatted.sort((a, b) => b.timestamp - a.timestamp);
+-                setTransactions(formatted);
+-            } catch (e) {
+-                console.error("Failed to fetch global transactions", e);
+-            } finally {
+-                if (isMounted) setIsLoading(false);
++            // Deduplicate by id
++            const seen = new Set<string>();
++            const deduped = allTxs.filter(tx => {
++                if (seen.has(tx.id)) return false;
++                seen.add(tx.id);
++                return true;
++            });
++
++            deduped.sort((a, b) => b.timestamp - a.timestamp);
++            if (isMounted) {
++                setTransactions(deduped);
++                setIsLoading(false);
+             }
+         };
+ 
+@@ -83,84 +248,185 @@ export function TransactionsTable({ activeChain, refreshTrigger }: { activeChain
+     // Apply chain filter
+     const filteredTxs = transactions.filter(tx => activeChain === 'All' || tx.chain === activeChain);
+ 
++    // Pagination
++    const totalPages = Math.max(1, Math.ceil(filteredTxs.length / ITEMS_PER_PAGE));
++    const clampedPage = Math.min(currentPage, totalPages);
++    const paginatedTxs = filteredTxs.slice((clampedPage - 1) * ITEMS_PER_PAGE, clampedPage * ITEMS_PER_PAGE);
++
++    // Page number range
++    const getPageNumbers = (): number[] => {
++        const pages: number[] = [];
++        const start = Math.max(1, clampedPage - 2);
++        const end = Math.min(totalPages, clampedPage + 2);
++        for (let i = start; i <= end; i++) pages.push(i);
++        return pages;
++    };
++
+     return (
+-        <div className="rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-md overflow-hidden relative">
+-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+-
+-            <div className="overflow-x-auto relative">
+-                <Table>
+-                    <TableHeader className="bg-white/[0.02] border-b border-white/[0.06]">
+-                        <TableRow className="hover:bg-transparent">
+-                            <TableHead className="text-muted-foreground w-[80px]">Time</TableHead>
+-                            <TableHead className="text-muted-foreground w-[180px]">Type</TableHead>
+-                            <TableHead className="text-muted-foreground text-right w-[120px]">USD Value</TableHead>
+-                            <TableHead className="text-muted-foreground text-right">Sold Amount</TableHead>
+-                            <TableHead className="text-muted-foreground text-right">Bought Amount</TableHead>
+-                            <TableHead className="text-muted-foreground text-right w-[150px]">Wallet</TableHead>
+-                        </TableRow>
+-                    </TableHeader>
+-                    <TableBody>
+-                        {filteredTxs.length === 0 ? (
+-                            <TableRow>
+-                                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+-                                    <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
+-                                    No transactions found for this chain.
+-                                </TableCell>
+-                            </TableRow>
+-                        ) : (
+-                            filteredTxs.map((tx) => (
+-                                <TableRow key={tx.id} className="hover:bg-white/[0.02] border-white/[0.06] transition-colors">
+-                                    <TableCell className="text-muted-foreground text-sm font-medium">
+-                                        {getTimeAgo(tx.timestamp)}
+-                                    </TableCell>
+-                                    <TableCell>
+-                                        <div className="flex items-center gap-2">
+-                                            <span className="text-xs font-medium text-muted-foreground">{tx.type}</span>
+-                                            <div className="flex items-center gap-1.5 ml-1">
+-                                                <span className="text-sm font-bold text-foreground">{tx.sellToken}</span>
+-                                                <span className="text-xs text-muted-foreground">for</span>
+-                                                <span className="text-sm font-bold text-primary">{tx.buyToken}</span>
+-                                            </div>
+-                                        </div>
+-                                    </TableCell>
+-                                    <TableCell className="text-right font-medium text-emerald-400">
+-                                        ${tx.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+-                                    </TableCell>
+-                                    <TableCell className="text-right">
+-                                        <div className="flex items-center justify-end gap-1.5">
+-                                            <span className="font-semibold">{tx.sellAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+-                                            <span className="text-xs text-muted-foreground">{tx.sellToken}</span>
+-                                        </div>
+-                                    </TableCell>
+-                                    <TableCell className="text-right">
+-                                        <div className="flex items-center justify-end gap-1.5">
+-                                            <span className="font-semibold">{tx.buyAmount.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+-                                            <span className="text-xs text-muted-foreground">{tx.buyToken}</span>
+-                                        </div>
+-                                    </TableCell>
+-                                    <TableCell className="text-right">
+-                                        <div className="flex items-center justify-end gap-2">
+-                                            <span className="font-mono text-xs text-muted-foreground bg-white/[0.03] px-1.5 py-0.5 rounded">
+-                                                {tx.wallet}
+-                                            </span>
+-                                            {tx.txHash && (
+-                                                <a
+-                                                    href={tx.chain === 'Bitcoin Cash' ? `https://chipnet.chaingraph.cash/tx/${tx.txHash}` : '#'}
+-                                                    target="_blank"
+-                                                    rel="noopener noreferrer"
+-                                                    className="text-muted-foreground hover:text-primary transition-colors"
+-                                                >
+-                                                    <ExternalLink className="h-3 w-3" />
+-                                                </a>
+-                                            )}
+-                                        </div>
+-                                    </TableCell>
++        <div className="rounded-xl border border-white/[0.08] bg-black/40 backdrop-blur-md overflow-hidden">
++
++            {isLoading ? (
++                <div className="flex items-center justify-center py-20">
++                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
++                </div>
++            ) : (
++                <>
++                    <div className="overflow-x-auto">
++                        <Table>
++                            <TableHeader className="bg-white/[0.02] border-b border-white/[0.06]">
++                                <TableRow className="hover:bg-transparent">
++                                    <TableHead className="text-muted-foreground text-xs font-semibold w-[90px] pl-4">Time</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold">Type</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold">
++                                        <div className="flex items-center gap-1">Token Pair <ArrowUpDown className="h-3 w-3" /></div>
++                                    </TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold text-right">USD Value</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold text-right">Sold</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold text-right">Received</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold">Chain</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold">Status</TableHead>
++                                    <TableHead className="text-muted-foreground text-xs font-semibold text-right w-[50px] pr-4">Tx</TableHead>
+                                 </TableRow>
+-                            ))
+-                        )}
+-                    </TableBody>
+-                </Table>
+-            </div>
++                            </TableHeader>
++                            <TableBody>
++                                {paginatedTxs.length === 0 ? (
++                                    <TableRow>
++                                        <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
++                                            <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
++                                            No transactions found.
++                                        </TableCell>
++                                    </TableRow>
++                                ) : (
++                                    paginatedTxs.map((tx) => (
++                                        <TableRow key={tx.id} className="hover:bg-white/[0.02] border-white/[0.06] transition-colors group">
++                                            {/* Time */}
++                                            <TableCell className="text-muted-foreground text-sm font-medium pl-4">
++                                                {getTimeAgo(tx.timestamp)}
++                                            </TableCell>
++
++                                            {/* Type */}
++                                            <TableCell>
++                                                <Badge variant="outline" className={cn("text-[10px] py-0 border-white/10 font-medium", tx.type === 'HTLC Swap' ? 'text-purple-400' : tx.type === 'CashToken' ? 'text-emerald-400' : 'text-blue-400')}>
++                                                    {tx.type}
++                                                </Badge>
++                                            </TableCell>
++
++                                            {/* Token Pair — Uniswap style */}
++                                            <TableCell>
++                                                <div className="flex items-center gap-2">
++                                                    <div className="flex items-center -space-x-2">
++                                                        <TxTokenIcon symbol={tx.sellToken} icon={tx.sellIcon} />
++                                                        <TxTokenIcon symbol={tx.buyToken} icon={tx.buyIcon} />
++                                                    </div>
++                                                    <div className="flex items-center gap-1.5">
++                                                        <span className="text-sm font-bold text-foreground">{tx.sellToken}</span>
++                                                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
++                                                        <span className="text-sm font-bold text-emerald-400">{tx.buyToken}</span>
++                                                    </div>
++                                                </div>
++                                            </TableCell>
++
++                                            {/* USD Value */}
++                                            <TableCell className="text-right font-medium text-emerald-400">
++                                                ${tx.usdValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
++                                            </TableCell>
++
++                                            {/* Sold */}
++                                            <TableCell className="text-right">
++                                                <div className="flex items-center justify-end gap-1.5">
++                                                    <span className="font-semibold text-red-400/80">{tx.sellAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
++                                                    <span className="text-xs text-muted-foreground">{tx.sellToken}</span>
++                                                </div>
++                                            </TableCell>
++
++                                            {/* Received */}
++                                            <TableCell className="text-right">
++                                                <div className="flex items-center justify-end gap-1.5">
++                                                    <span className="font-semibold text-emerald-400/80">{tx.buyAmount.toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
++                                                    <span className="text-xs text-muted-foreground">{tx.buyToken}</span>
++                                                </div>
++                                            </TableCell>
++
++                                            {/* Chain */}
++                                            <TableCell>
++                                                <div className="flex items-center gap-1.5">
++                                                    {CHAIN_ICONS[tx.chain] && (
++                                                        <img src={CHAIN_ICONS[tx.chain]} alt={tx.chain} className="h-4 w-4 rounded-full object-contain" />
++                                                    )}
++                                                    <span className="text-xs text-muted-foreground">
++                                                        {tx.chain === 'Bitcoin Cash' ? 'BCH' : tx.chain}
++                                                    </span>
++                                                </div>
++                                            </TableCell>
++
++                                            {/* Status */}
++                                            <TableCell>
++                                                <Badge variant="outline" className={cn("text-[10px] py-0", statusColor(tx.status))}>
++                                                    {tx.status}
++                                                </Badge>
++                                            </TableCell>
++
++                                            {/* Explorer Link */}
++                                            <TableCell className="text-right pr-4">
++                                                {(tx.explorerUrl || tx.txHash) && (
++                                                    <a
++                                                        href={tx.explorerUrl || `https://chipnet.chaingraph.cash/tx/${tx.txHash}`}
++                                                        target="_blank"
++                                                        rel="noopener noreferrer"
++                                                        className="text-muted-foreground hover:text-emerald-400 transition-colors"
++                                                    >
++                                                        <ExternalLink className="h-4 w-4" />
++                                                    </a>
++                                                )}
++                                            </TableCell>
++                                        </TableRow>
++                                    ))
++                                )}
++                            </TableBody>
++                        </Table>
++                    </div>
++
++                    {/* Pagination */}
++                    {totalPages > 1 && (
++                        <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
++                            <div className="text-xs text-muted-foreground">
++                                Showing {(clampedPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(clampedPage * ITEMS_PER_PAGE, filteredTxs.length)} of {filteredTxs.length}
++                            </div>
++                            <div className="flex items-center gap-1">
++                                <Button
++                                    variant="ghost"
++                                    size="icon"
++                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
++                                    disabled={clampedPage <= 1}
++                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
++                                >
++                                    <ChevronLeft className="h-4 w-4" />
++                                </Button>
++                                {getPageNumbers().map(n => (
++                                    <Button
++                                        key={n}
++                                        variant={n === clampedPage ? "default" : "ghost"}
++                                        size="icon"
++                                        className={cn("h-8 w-8 text-xs", n === clampedPage ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" : "text-muted-foreground hover:text-foreground")}
++                                        onClick={() => setCurrentPage(n)}
++                                    >
++                                        {n}
++                                    </Button>
++                                ))}
++                                <Button
++                                    variant="ghost"
++                                    size="icon"
++                                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
++                                    disabled={clampedPage >= totalPages}
++                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
++                                >
++                                    <ChevronRight className="h-4 w-4" />
++                                </Button>
++                            </div>
++                        </div>
++                    )}
++                </>
++            )}
+         </div>
+     );
+ }
+diff --git a/src/components/landing/bento/MovementSwapsCard.tsx b/src/components/landing/bento/MovementSwapsCard.tsx
+index 369f4d2..383a45d 100644
+--- a/src/components/landing/bento/MovementSwapsCard.tsx
++++ b/src/components/landing/bento/MovementSwapsCard.tsx
+@@ -16,19 +16,43 @@ import { TokenDisplay } from '@/components/common/TokenDisplay';
+ import { Link } from 'react-router-dom';
+ import { motion, AnimatePresence } from 'framer-motion';
+ 
+-// Tokens for the swap animation
++// Tokens for the swap animation — CashToken + Cross-Chain swaps
+ const SWAP_PAIRS = [
++    // Cross-chain: SOL → BCH
++    {
++        from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
++        to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
++        type: 'Cross-Chain',
++    },
++    // Cross-chain: MOVE → MUSD
+     {
+         from: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
+-        to: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
++        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
++        type: 'Cross-Chain',
+     },
++    // Cross-chain: USDC → BCH
+     {
+-        from: { icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', ticker: 'ETH' },
+-        to: { icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', ticker: 'MOVE' },
++        from: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
++        to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
++        type: 'Cross-Chain',
+     },
++    // CashToken: MUSD → BCH (same-chain)
+     {
+-        from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
++        from: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
+         to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
++        type: 'CashToken',
++    },
++    // CashToken: BCH → MUSD (same-chain)
++    {
++        from: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
++        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
++        type: 'CashToken',
++    },
++    // Cross-chain: SOL → MUSD
++    {
++        from: { icon: '/assets/solanaLogo.png', ticker: 'SOL' },
++        to: { icon: 'https://electroncash.org/images/logosForEcosystem/square/moria.png', ticker: 'MUSD' },
++        type: 'Cross-Chain',
+     },
+ ];
+ 
+@@ -145,8 +169,25 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
+                             </motion.div>
+                         </AnimatePresence>
+ 
+-                        {/* Arrow with pulse */}
++                        {/* Arrow with pulse + swap type label */}
+                         <div className="flex flex-col items-center gap-1">
++                            <AnimatePresence mode="wait">
++                                <motion.span
++                                    key={`type-${currentPair}`}
++                                    initial={{ opacity: 0, y: -5 }}
++                                    animate={{ opacity: 1, y: 0 }}
++                                    exit={{ opacity: 0, y: 5 }}
++                                    transition={{ duration: 0.2 }}
++                                    className={cn(
++                                        "text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1",
++                                        pair.type === 'CashToken'
++                                            ? "bg-emerald-500/10 text-emerald-500"
++                                            : "bg-purple-500/10 text-purple-500"
++                                    )}
++                                >
++                                    {pair.type}
++                                </motion.span>
++                            </AnimatePresence>
+                             <motion.div
+                                 animate={{ scale: [1, 1.2, 1] }}
+                                 transition={{ duration: 1, repeat: Infinity }}
+diff --git a/src/components/landing/bento/TradingApiCard.tsx b/src/components/landing/bento/TradingApiCard.tsx
+index 882e2a5..e29d1cd 100644
+--- a/src/components/landing/bento/TradingApiCard.tsx
++++ b/src/components/landing/bento/TradingApiCard.tsx
+@@ -40,14 +40,13 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
+             {/* Title */}
+             <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-primary">
+-                    DeFi for your users, at no cost.
++                    The Ultimate Intent API
+                 </span>
+             </h3>
+ 
+             {/* Description */}
+             <p className="text-muted-foreground mb-4 leading-relaxed">
+-                Use the same API that powers Intent Protocol. Join leading teams who trust the API
+-                to access deep crypto liquidity.
++                Enable lightning-fast, zero-slippage swaps for your users. Integrate our unified API to route BCH, Solana, and Movement liquidity instantly.
+             </p>
+ 
+             {/* CTA Button */}
+diff --git a/src/components/landing/getting-started/ConnectWalletCard.tsx b/src/components/landing/getting-started/ConnectWalletCard.tsx
+index 19a9e36..ecb6559 100644
+--- a/src/components/landing/getting-started/ConnectWalletCard.tsx
++++ b/src/components/landing/getting-started/ConnectWalletCard.tsx
+@@ -15,16 +15,16 @@ interface CardProps {
+ 
+ // Wallet icons data
+ const WALLETS = [
+-    { name: 'MetaMask', color: '#F6851B', icon: '🦊' },
+-    { name: 'Phantom', color: '#AB9FF2', icon: '👻' },
+-    { name: 'Petra', color: '#FF5F5F', icon: '🔴' },
+-    { name: 'Razor', color: '#00D395', icon: '⚡' },
++    { name: 'MetaMask', color: '#F6851B', icon: 'https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg' },
++    { name: 'Nightly', color: '#6A44FF', icon: 'https://nightly.app/img/logo.png' },
++    { name: 'Phantom', color: '#AB9FF2', icon: 'https://phantom.com/img/phantom-logo.svg' },
++    { name: 'Electron Cash', color: '#0AC18E', icon: 'https://electroncash.org/images/logosForEcosystem/square/electroncash.png' },
+ ];
+ 
+ export function ConnectWalletCard({ stepNumber }: CardProps) {
+     return (
+         <div className={cn(
+-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
++            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
+             "grainy group cursor-pointer"
+         )}>
+             {/* Gradient Background on Hover */}
+@@ -77,7 +77,21 @@ export function ConnectWalletCard({ stepNumber }: CardProps) {
+                                     ease: 'easeInOut',
+                                 }}
+                             >
+-                                <span className="text-3xl">{wallet.icon}</span>
++                                <img
++                                    src={wallet.icon}
++                                    alt={wallet.name}
++                                    className="w-10 h-10 object-contain rounded-xl"
++                                    onError={(e) => {
++                                        // Fallback to initial letter if image fails
++                                        e.currentTarget.style.display = 'none';
++                                        if (e.currentTarget.nextElementSibling) {
++                                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
++                                        }
++                                    }}
++                                />
++                                <span className="text-2xl font-bold hidden" style={{ color: wallet.color }}>
++                                    {wallet.name.charAt(0)}
++                                </span>
+                             </motion.div>
+                         ))}
+ 
+diff --git a/src/components/landing/getting-started/DepositFundCard.tsx b/src/components/landing/getting-started/DepositFundCard.tsx
+index 51214e4..45bfd92 100644
+--- a/src/components/landing/getting-started/DepositFundCard.tsx
++++ b/src/components/landing/getting-started/DepositFundCard.tsx
+@@ -15,36 +15,36 @@ interface CardProps {
+ 
+ // Chain data with logos
+ const CHAINS = [
++    {
++        name: 'Bitcoin Cash',
++        color: '#0AC18E',
++        logo: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg',
++        shortName: 'BCH'
++    },
+     {
+         name: 'Solana',
+         color: '#9945FF',
+-        logo: '/images/chains/solana.svg',
++        logo: '/assets/solanaLogo.png',
+         shortName: 'SOL'
+     },
+     {
+         name: 'Movement',
+         color: '#FACC15',
+-        logo: '/images/chains/movement.png',
++        logo: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
+         shortName: 'MOVE'
+     },
+     {
+         name: 'Ethereum',
+         color: '#627EEA',
+-        logo: '/images/chains/ethereum.svg',
++        logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
+         shortName: 'ETH'
+     },
+-    {
+-        name: 'Aptos',
+-        color: '#66C7A4',
+-        logo: '/images/tokens/apt.png',
+-        shortName: 'APT'
+-    },
+ ];
+ 
+ export function DepositFundCard({ stepNumber }: CardProps) {
+     return (
+         <div className={cn(
+-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
++            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
+             "grainy group cursor-pointer"
+         )}>
+             {/* Gradient Background on Hover */}
+@@ -126,19 +126,21 @@ export function DepositFundCard({ stepNumber }: CardProps) {
+                                     <img
+                                         src={chain.logo}
+                                         alt={chain.name}
+-                                        className="w-7 h-7 object-contain"
++                                        className="w-8 h-8 object-contain z-10"
+                                         onError={(e) => {
+-                                            e.currentTarget.src = '';
+-                                            e.currentTarget.className = 'hidden';
++                                            e.currentTarget.style.display = 'none';
++                                            if (e.currentTarget.nextElementSibling) {
++                                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
++                                            }
+                                         }}
+                                     />
+                                     {/* Fallback text */}
+-                                    <span
+-                                        className="text-xs font-bold absolute inset-0 flex items-center justify-center"
++                                    <div
++                                        className="absolute inset-0 hidden items-center justify-center font-bold text-xs"
+                                         style={{ color: chain.color }}
+                                     >
+                                         {chain.shortName}
+-                                    </span>
++                                    </div>
+                                 </motion.div>
+                             );
+                         })}
+diff --git a/src/components/landing/getting-started/IntentSwapCard.tsx b/src/components/landing/getting-started/IntentSwapCard.tsx
+index 4040c3c..505f909 100644
+--- a/src/components/landing/getting-started/IntentSwapCard.tsx
++++ b/src/components/landing/getting-started/IntentSwapCard.tsx
+@@ -17,16 +17,16 @@ interface CardProps {
+ // Token pairs for swap animation
+ const SWAP_PAIRS = [
+     {
+-        from: { symbol: 'SOL', amount: '5', icon: '/images/tokens/sol.svg', color: '#9945FF' },
+-        to: { symbol: 'BCH', amount: '40', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
++        from: { symbol: 'SOL', amount: '5', icon: '/assets/solanaLogo.png', color: '#9945FF' },
++        to: { symbol: 'BCH', amount: '40', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
+     },
+     {
+-        from: { symbol: 'ETH', amount: '1', icon: '/images/tokens/eth.svg', color: '#627EEA' },
+-        to: { symbol: 'BCH', amount: '6', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
++        from: { symbol: 'ETH', amount: '1', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', color: '#627EEA' },
++        to: { symbol: 'BCH', amount: '6', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
+     },
+     {
+-        from: { symbol: 'MOVE', amount: '1000', icon: '/images/tokens/move.svg', color: '#FACC15' },
+-        to: { symbol: 'BCH', amount: '2', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', color: '#0AC18E' },
++        from: { symbol: 'MOVE', amount: '1000', icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', color: '#FACC15' },
++        to: { symbol: 'BCH', amount: '2', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
+     },
+ ];
+ 
+@@ -51,7 +51,7 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
+ 
+     return (
+         <div className={cn(
+-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
++            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
+             "grainy group cursor-pointer"
+         )}>
+             {/* Gradient Background on Hover */}
+@@ -100,12 +100,10 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
+                             )}
+                         >
+                             <div
+-                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1"
++                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 overflow-hidden"
+                                 style={{ backgroundColor: `${currentPair.from.color}20` }}
+                             >
+-                                <span className="text-lg font-bold" style={{ color: currentPair.from.color }}>
+-                                    {currentPair.from.symbol.slice(0, 1)}
+-                                </span>
++                                <img src={currentPair.from.icon} alt={currentPair.from.symbol} className="w-full h-full object-cover" />
+                             </div>
+                             <span className="text-xs font-medium text-muted-foreground">
+                                 {currentPair.from.amount}
+@@ -179,12 +177,10 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
+                             )}
+                         >
+                             <div
+-                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1"
++                                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 overflow-hidden"
+                                 style={{ backgroundColor: `${currentPair.to.color}20` }}
+                             >
+-                                <span className="text-lg font-bold" style={{ color: currentPair.to.color }}>
+-                                    {currentPair.to.symbol.slice(0, 1)}
+-                                </span>
++                                <img src={currentPair.to.icon} alt={currentPair.to.symbol} className="w-full h-full object-cover" />
+                             </div>
+                             <span className="text-xs font-medium text-muted-foreground">
+                                 {currentPair.to.amount}
+diff --git a/src/components/landing/getting-started/TrackPortfolioCard.tsx b/src/components/landing/getting-started/TrackPortfolioCard.tsx
+index 8999fdc..1677234 100644
+--- a/src/components/landing/getting-started/TrackPortfolioCard.tsx
++++ b/src/components/landing/getting-started/TrackPortfolioCard.tsx
+@@ -8,6 +8,7 @@
+ import { cn } from '@/lib/utils';
+ import { motion } from 'framer-motion';
+ import { BarChart3, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
++import { TokenDisplay } from '@/components/common/TokenDisplay';
+ 
+ interface CardProps {
+     stepNumber: number;
+@@ -15,6 +16,15 @@ interface CardProps {
+ 
+ // Mock portfolio data
+ const ASSETS = [
++    {
++        symbol: 'BCH',
++        name: 'Bitcoin Cash',
++        balance: '15.50',
++        value: '$6,200.00',
++        pnl: '+15.2%',
++        isPositive: true,
++        tokenIcon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg',
++    },
+     {
+         symbol: 'MOVE',
+         name: 'Movement',
+@@ -22,7 +32,7 @@ const ASSETS = [
+         value: '$2,500.00',
+         pnl: '+12.5%',
+         isPositive: true,
+-        color: '#FACC15',
++        tokenIcon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
+     },
+     {
+         symbol: 'USDC',
+@@ -31,7 +41,7 @@ const ASSETS = [
+         value: '$5,000.00',
+         pnl: '0.0%',
+         isPositive: true,
+-        color: '#2775CA',
++        tokenIcon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+     },
+     {
+         symbol: 'SOL',
+@@ -40,23 +50,14 @@ const ASSETS = [
+         value: '$3,825.00',
+         pnl: '+8.2%',
+         isPositive: true,
+-        color: '#9945FF',
+-    },
+-    {
+-        symbol: 'ETH',
+-        name: 'Ethereum',
+-        balance: '0.85',
+-        value: '$2,125.00',
+-        pnl: '-2.1%',
+-        isPositive: false,
+-        color: '#627EEA',
++        tokenIcon: '/assets/solanaLogo.png',
+     },
+ ];
+ 
+ export function TrackPortfolioCard({ stepNumber }: CardProps) {
+     return (
+         <div className={cn(
+-            "bento-card-interactive w-full h-full flex flex-col p-6 !rounded-none",
++            "bento-card-interactive glass-panel w-full h-full flex flex-col p-6 !rounded-none",
+             "grainy group cursor-pointer"
+         )}>
+             {/* Gradient Background on Hover */}
+@@ -88,7 +89,7 @@ export function TrackPortfolioCard({ stepNumber }: CardProps) {
+                     <div className="flex items-center justify-between">
+                         <div>
+                             <p className="text-xs text-muted-foreground">Total Balance</p>
+-                            <p className="text-xl font-bold">$13,450.00</p>
++                            <p className="text-xl font-bold">$17,525.00</p>
+                         </div>
+                         <div className="text-right">
+                             <p className="text-xs text-muted-foreground">24h Change</p>
+@@ -115,14 +116,12 @@ export function TrackPortfolioCard({ stepNumber }: CardProps) {
+                             )}
+                         >
+                             <div className="flex items-center gap-3">
+-                                <div
+-                                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+-                                    style={{ backgroundColor: `${asset.color}20` }}
+-                                >
+-                                    <span className="text-xs font-bold" style={{ color: asset.color }}>
+-                                        {asset.symbol.slice(0, 2)}
+-                                    </span>
+-                                </div>
++                                <TokenDisplay
++                                    tokenIcon={asset.tokenIcon}
++                                    size="md"
++                                    compact
++                                    showChainBadge={false}
++                                />
+                                 <div>
+                                     <p className="text-sm font-medium">{asset.symbol}</p>
+                                     <p className="text-[10px] text-muted-foreground">{asset.balance}</p>
+diff --git a/src/components/portfolio/PortfolioActivity.tsx b/src/components/portfolio/PortfolioActivity.tsx
+index 8776d8b..7fcb03b 100644
+--- a/src/components/portfolio/PortfolioActivity.tsx
++++ b/src/components/portfolio/PortfolioActivity.tsx
+@@ -1,22 +1,114 @@
+ import { useState, useEffect } from 'react';
+-import { ArrowUpRight, ArrowDownLeft, RefreshCw, Layers, Navigation } from 'lucide-react';
++import { ArrowUpRight, ArrowDownLeft, RefreshCw, Layers, Navigation, Globe } from 'lucide-react';
+ import { cn } from '@/lib/utils';
+ import { formatCurrency } from '@/lib/coingecko';
+ import { ActivityService, ActivityRecord } from '@/lib/activity';
++import { BCHOrder } from '@/types';
++
++const BCH_ORDERS_KEY = 'bch_swap_orders';
++
++const TOKEN_ICONS: Record<string, string> = {
++    'BCH': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
++    'SOL': '/assets/solanaLogo.png',
++    'MOVE': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
++    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
++    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
++};
++
++interface MergedActivity {
++    id: string;
++    type: 'send' | 'receive' | 'swap' | 'bridge';
++    title: string;
++    subtitle: string;
++    valueUsd: number;
++    timestamp: number;
++    explorerUrl?: string;
++    sellIcon?: string;
++    buyIcon?: string;
++}
++
++function getExplorerUrl(order: BCHOrder): string | undefined {
++    if (order.explorerUrl) return order.explorerUrl;
++    if (order.txid) {
++        if (order.swapType.includes('sol')) return `https://explorer.solana.com/tx/${order.txid}?cluster=devnet`;
++        if (order.swapType.includes('mov')) return `https://explorer.movementnetwork.xyz/txn/${order.txid}?network=testnet`;
++        return `https://chipnet.chaingraph.cash/tx/${order.txid}`;
++    }
++    if (order.contractAddress) return `https://chipnet.chaingraph.cash/address/${order.contractAddress}`;
++    return undefined;
++}
+ 
+ export function PortfolioActivity() {
+-    const [activities, setActivities] = useState<ActivityRecord[]>([]);
++    const [activities, setActivities] = useState<MergedActivity[]>([]);
+ 
+     useEffect(() => {
+-        const loadHistory = () => {
+-            setActivities(ActivityService.getHistory());
+-        };
++        const loadAll = () => {
++            const merged: MergedActivity[] = [];
++
++            // 1. ActivityService records (send/receive)
++            try {
++                const records = ActivityService.getHistory();
++                records.forEach(tx => {
++                    merged.push({
++                        id: tx.id,
++                        type: tx.type,
++                        title: tx.type === 'swap' ? `Swapped ${tx.assetIn} for ${tx.assetOut}` :
++                            tx.type === 'receive' ? `Received ${tx.asset}` :
++                                tx.type === 'send' ? `Sent ${tx.asset}` :
++                                    `Bridged ${tx.asset}`,
++                        subtitle: tx.type === 'swap' ? `${tx.amountIn} ${tx.assetIn} → ${tx.amountOut} ${tx.assetOut}` : `${tx.amount} ${tx.asset}`,
++                        valueUsd: tx.valueUsd,
++                        timestamp: tx.timestamp,
++                        explorerUrl: tx.explorerUrl,
++                    });
++                });
++            } catch { /* non-fatal */ }
+ 
+-        loadHistory();
++            // 2. BCH swap orders from localStorage
++            try {
++                const saved = localStorage.getItem(BCH_ORDERS_KEY);
++                if (saved) {
++                    const bchOrders: BCHOrder[] = JSON.parse(saved);
++                    bchOrders.forEach(order => {
++                        const sellSym = order.sellToken?.symbol || '?';
++                        const buySym = order.buyToken?.symbol || '?';
++                        const isCross = order.swapType !== 'same-chain';
++                        const mockUsdPrice = sellSym === 'BCH' ? 250 : sellSym === 'SOL' ? 150 : sellSym === 'MOVE' ? 0.8 : 1;
++                        const statusLabel = order.status === 'filled' || order.status === 'claimed' ? '✓' : order.status === 'pending' ? '⏳' : order.status === 'claimable' ? '🎯' : '';
++                        merged.push({
++                            id: `bch_${order.id}`,
++                            type: isCross ? 'bridge' : 'swap',
++                            title: `${statusLabel} Swapped ${sellSym} for ${buySym}`,
++                            subtitle: `${order.sellAmount} ${sellSym} → ${Number(order.buyAmount).toFixed(4)} ${buySym}`,
++                            valueUsd: order.sellAmount * mockUsdPrice,
++                            timestamp: order.createdAt,
++                            explorerUrl: getExplorerUrl(order),
++                            sellIcon: order.sellToken?.icon || TOKEN_ICONS[sellSym],
++                            buyIcon: order.buyToken?.icon || TOKEN_ICONS[buySym],
++                        });
++                    });
++                }
++            } catch { /* non-fatal */ }
+ 
+-        // Listen for internal app updates
+-        window.addEventListener('activity_history_updated', loadHistory);
+-        return () => window.removeEventListener('activity_history_updated', loadHistory);
++            // Sort by time desc and dedupe
++            const seen = new Set<string>();
++            const deduped = merged.filter(a => {
++                if (seen.has(a.id)) return false;
++                seen.add(a.id);
++                return true;
++            });
++            deduped.sort((a, b) => b.timestamp - a.timestamp);
++            setActivities(deduped);
++        };
++
++        loadAll();
++        window.addEventListener('activity_history_updated', loadAll);
++        // Also poll every 5s for new BCH orders
++        const interval = setInterval(loadAll, 5000);
++        return () => {
++            window.removeEventListener('activity_history_updated', loadAll);
++            clearInterval(interval);
++        };
+     }, []);
+ 
+     const formatTime = (ts: number) => {
+@@ -40,7 +132,7 @@ export function PortfolioActivity() {
+         <div className="w-full">
+             <div className="mb-4">
+                 <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
+-                <p className="text-sm text-muted-foreground mt-1">Your recent transactions</p>
++                <p className="text-sm text-muted-foreground mt-1">Swaps, sends, receives, and cross-chain bridges</p>
+             </div>
+ 
+             <div className="flex flex-col gap-2">
+@@ -66,18 +158,20 @@ export function PortfolioActivity() {
+                                 {tx.type === 'receive' && <ArrowDownLeft className="h-5 w-5" />}
+                                 {tx.type === 'send' && <Navigation className="h-5 w-5 -rotate-90" />}
+                                 {tx.type === 'swap' && <RefreshCw className="h-5 w-5" />}
+-                                {tx.type === 'bridge' && <Layers className="h-5 w-5" />}
++                                {tx.type === 'bridge' && <Globe className="h-5 w-5" />}
+                             </div>
+                             <div className="flex flex-col">
+-                                <span className="font-medium text-foreground capitalize">
+-                                    {tx.type === 'swap' ? `Swapped ${tx.assetIn} for ${tx.assetOut}` :
+-                                        tx.type === 'receive' ? `Received ${tx.asset}` :
+-                                            tx.type === 'send' ? `Sent ${tx.asset}` :
+-                                                `Bridged ${tx.asset}`}
+-                                </span>
+-                                <span className="text-xs text-muted-foreground mt-0.5 font-mono">
+-                                    {tx.type === 'swap' ? `${tx.amountIn} ${tx.assetIn} → ${tx.amountOut} ${tx.assetOut}` : `${tx.amount} ${tx.asset}`}
+-                                </span>
++                                <div className="flex items-center gap-2">
++                                    {/* Token icons for swaps */}
++                                    {(tx.type === 'swap' || tx.type === 'bridge') && (tx.sellIcon || tx.buyIcon) && (
++                                        <div className="flex -space-x-1.5 mr-1">
++                                            {tx.sellIcon && <img src={tx.sellIcon} className="w-4 h-4 rounded-full border border-zinc-800" />}
++                                            {tx.buyIcon && <img src={tx.buyIcon} className="w-4 h-4 rounded-full border border-zinc-800" />}
++                                        </div>
++                                    )}
++                                    <span className="font-medium text-foreground">{tx.title}</span>
++                                </div>
++                                <span className="text-xs text-muted-foreground mt-0.5 font-mono">{tx.subtitle}</span>
+                             </div>
+                         </div>
+ 
+diff --git a/src/components/ui/sonner.tsx b/src/components/ui/sonner.tsx
+index 6e6fd25..36ead9c 100644
+--- a/src/components/ui/sonner.tsx
++++ b/src/components/ui/sonner.tsx
+@@ -19,6 +19,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
+     <Sonner
+       theme={theme as ToasterProps["theme"]}
+       className="toaster group"
++      visibleToasts={3}
++      gap={8}
++      richColors
+       icons={{
+         success: <CircleCheck className="h-4 w-4" />,
+         info: <Info className="h-4 w-4" />,
+diff --git a/src/components/wallet/WalletOrdersTab.tsx b/src/components/wallet/WalletOrdersTab.tsx
+index 9e943c4..ec7a257 100644
+--- a/src/components/wallet/WalletOrdersTab.tsx
++++ b/src/components/wallet/WalletOrdersTab.tsx
+@@ -33,11 +33,33 @@ function OrderRow({ order }: { order: BCHOrder }) {
+         'same-chain': 'Same Chain',
+         'bch-to-sol': 'BCH → SOL',
+         'sol-to-bch': 'SOL → BCH',
++        'bch-to-mov': 'BCH → MOVE',
++        'mov-to-bch': 'MOVE → BCH',
+     };
+ 
++    const sellIcon = order.sellToken?.icon;
++    const buyIcon = order.buyToken?.icon;
++
+     return (
+         <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+             <div className="flex items-center gap-2.5 min-w-0">
++                {/* Token pair icons */}
++                <div className="flex items-center -space-x-1 flex-shrink-0">
++                    <div className="h-5 w-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden z-[1]">
++                        {sellIcon ? (
++                            <img src={sellIcon} alt={order.sellToken?.symbol} className="h-3.5 w-3.5 object-contain" />
++                        ) : (
++                            <span className="text-[7px] font-bold text-muted-foreground">{order.sellToken?.symbol?.[0] || '?'}</span>
++                        )}
++                    </div>
++                    <div className="h-5 w-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
++                        {buyIcon ? (
++                            <img src={buyIcon} alt={order.buyToken?.symbol} className="h-3.5 w-3.5 object-contain" />
++                        ) : (
++                            <span className="text-[7px] font-bold text-muted-foreground">{order.buyToken?.symbol?.[0] || '?'}</span>
++                        )}
++                    </div>
++                </div>
+                 {config.icon}
+                 <div className="min-w-0">
+                     <div className="flex items-center gap-1.5 text-xs font-medium">
+@@ -55,7 +77,7 @@ function OrderRow({ order }: { order: BCHOrder }) {
+                 <Badge variant={config.badge} className="text-[9px] h-4 px-1.5">{config.label}</Badge>
+                 {order.txid && (
+                     <a
+-                        href={`https://chipnet.chaingraph.cash/tx/${order.txid}`}
++                        href={order.explorerUrl || `https://chipnet.chaingraph.cash/tx/${order.txid}`}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="text-muted-foreground hover:text-foreground"
+diff --git a/src/components/wallet/WalletPopup.tsx b/src/components/wallet/WalletPopup.tsx
+index fcc8b14..d5015fd 100644
+--- a/src/components/wallet/WalletPopup.tsx
++++ b/src/components/wallet/WalletPopup.tsx
+@@ -1,5 +1,7 @@
+ import { useState, useEffect, useRef } from 'react';
+-import { X, Wallet, Bell, LogOut, RefreshCw, Eye, EyeOff } from 'lucide-react';
++import { X, Wallet, Bell, LogOut, RefreshCw, Eye, EyeOff, CheckCircle2, Clock, Loader2, XCircle, ArrowRight, ExternalLink } from 'lucide-react';
++import { useBCHSwapOptional } from '@/context/BCHSwapContext';
++import { BCHOrder } from '@/types';
+ import { Button } from '@/components/ui/button';
+ import { PriceService } from '@/lib/pyth';
+ import { PriceData } from '@/types';
+@@ -21,6 +23,128 @@ import { usePortfolio } from '@/hooks/usePortfolio';
+ type TopTab = 'wallet' | 'notifications';
+ type SubTab = 'tokens' | 'orders' | 'history' | 'addresses';
+ 
++// ============================================================================
++// Notifications Panel — Shows captured toast/notification events
++// ============================================================================
++
++const NOTIF_STORAGE_KEY = 'intent_notifications';
++
++export interface StoredNotification {
++    id: string;
++    type: 'success' | 'error' | 'info' | 'warning';
++    message: string;
++    description?: string;
++    timestamp: number;
++}
++
++/** Call this alongside toast() to also store the notification for the wallet panel */
++export function pushNotification(type: StoredNotification['type'], message: string, description?: string) {
++    try {
++        const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
++        const list: StoredNotification[] = raw ? JSON.parse(raw) : [];
++        list.unshift({
++            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
++            type,
++            message,
++            description,
++            timestamp: Date.now(),
++        });
++        // Keep last 50
++        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(list.slice(0, 50)));
++    } catch { /* non-fatal */ }
++}
++
++function getTimeAgo(ts: number): string {
++    const diff = Date.now() - ts;
++    if (diff < 60000) return 'just now';
++    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
++    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
++    return `${Math.floor(diff / 86400000)}d ago`;
++}
++
++function NotificationsPanel() {
++    const [notifications, setNotifications] = useState<StoredNotification[]>([]);
++    const [, forceUpdate] = useState(0);
++
++    useEffect(() => {
++        const load = () => {
++            try {
++                const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
++                setNotifications(raw ? JSON.parse(raw) : []);
++            } catch { setNotifications([]); }
++        };
++        load();
++        // Poll every 2s to catch new toasts
++        const interval = setInterval(load, 2000);
++        return () => clearInterval(interval);
++    }, []);
++
++    const clearAll = () => {
++        localStorage.removeItem(NOTIF_STORAGE_KEY);
++        setNotifications([]);
++    };
++
++    const typeConfig: Record<string, { icon: React.ReactNode; color: string }> = {
++        success: { icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />, color: 'border-emerald-500/30' },
++        error: { icon: <XCircle className="h-4 w-4 text-red-400" />, color: 'border-red-500/30' },
++        info: { icon: <Bell className="h-4 w-4 text-blue-400" />, color: 'border-blue-500/30' },
++        warning: { icon: <Clock className="h-4 w-4 text-yellow-400" />, color: 'border-yellow-500/30' },
++    };
++
++    if (notifications.length === 0) {
++        return (
++            <div className="flex-1 px-4 py-10 text-center">
++                <Bell className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
++                <p className="text-sm text-muted-foreground">No notifications yet</p>
++                <p className="text-[10px] text-muted-foreground/60 mt-1">
++                    Toast events will appear here
++                </p>
++            </div>
++        );
++    }
++
++    return (
++        <div className="flex-1 overflow-y-auto max-h-[400px] px-3 pb-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
++            <div className="flex items-center justify-between px-1 py-2">
++                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
++                    {notifications.length} Notifications
++                </span>
++                <button
++                    onClick={clearAll}
++                    className="text-[10px] text-muted-foreground hover:text-red-400 transition-colors"
++                >
++                    Clear All
++                </button>
++            </div>
++            <div className="space-y-1.5">
++                {notifications.map(notif => {
++                    const cfg = typeConfig[notif.type] || typeConfig.info;
++                    return (
++                        <div
++                            key={notif.id}
++                            className={cn(
++                                "flex items-start gap-2.5 p-2.5 rounded-lg border-l-2 bg-white/[0.02] hover:bg-white/[0.04] transition-colors",
++                                cfg.color
++                            )}
++                        >
++                            <div className="mt-0.5 flex-shrink-0">{cfg.icon}</div>
++                            <div className="flex-1 min-w-0">
++                                <div className="text-xs font-medium text-foreground">{notif.message}</div>
++                                {notif.description && (
++                                    <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{notif.description}</div>
++                                )}
++                                <div className="text-[9px] text-muted-foreground/60 mt-0.5">
++                                    {getTimeAgo(notif.timestamp)}
++                                </div>
++                            </div>
++                        </div>
++                    );
++                })}
++            </div>
++        </div>
++    );
++}
++
+ interface WalletPopupProps {
+     open: boolean;
+     onClose: () => void;
+@@ -230,13 +354,7 @@ export function WalletPopup({ open, onClose }: WalletPopupProps) {
+                 </>
+             ) : (
+                 /* ─── Notifications Tab ─── */
+-                <div className="flex-1 px-4 py-10 text-center">
+-                    <Bell className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
+-                    <p className="text-sm text-muted-foreground">No notifications</p>
+-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+-                        Swap confirmations and alerts will appear here
+-                    </p>
+-                </div>
++                <NotificationsPanel />
+             )}
+         </div>
+     );
+diff --git a/src/context/BCHSwapContext.tsx b/src/context/BCHSwapContext.tsx
+index 0c0ad59..648ab6b 100644
+--- a/src/context/BCHSwapContext.tsx
++++ b/src/context/BCHSwapContext.tsx
+@@ -1,5 +1,5 @@
+ import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+-import { toast } from 'sonner';
++import { notifyToast as toast } from '@/lib/notify-toast';
+ import { useBCHWallet } from './BCHWalletProvider';
+ import { useWallet as useSolanaWallet, useConnection } from '@solana/wallet-adapter-react';
+ import { PublicKey, SystemProgram } from '@solana/web3.js';
+@@ -7,6 +7,8 @@ import { BCHSwapParams, BCHSwapType, BCHOrder } from '@/types';
+ import { BCH_SOLANA_RELAYER_URL, CASHTOKEN_RELAYER_URL } from '@/lib/config';
+ import axios from 'axios';
+ import * as anchor from '@coral-xyz/anchor';
++import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, getAccount } from '@solana/spl-token';
++import idl from '@/lib/intent_swap_idl.json';
+ 
+ // Lazy-loaded imports for CashScript (large bundle)
+ let cashscriptModule: any = null;
+@@ -634,22 +636,25 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
+         const contractAddress = contract.address;
+         console.log('[BCH→MOV] HTLC address:', contractAddress);
+ 
+-        // 3. Fund HTLC
+-        setSwapStep('Funding HTLC...');
++        // 3. Fund HTLC (same pattern as BCH→SOL)
++        setSwapStep('Signing BCH transaction...');
+         let fundTxId: string;
+         try {
+             const amountSats = Math.floor(params.sellAmount * 1e8);
+-            const wif = (bchWallet as any).wallet?.privateKeyWif || (bchWallet as any).privateKeyWif;
+-            if (!wif) throw new Error('WIF not available');
+-            const sentTo = contract.tokenAddress || contractAddress;
++            const wif = bchWallet.getWIF();
++            if (!wif) throw new Error('WIF not available — please reconnect your BCH wallet');
+ 
+-            const tx = await (bchWallet as any).wallet.send([{
+-                cashaddr: sentTo,
++            const { TestNetWallet } = await import('mainnet-js');
++            const wallet = await TestNetWallet.fromWIF(wif);
++
++            setSwapStep(`Sending ${params.sellAmount} BCH to HTLC...`);
++            const tx = await wallet.send([{
++                cashaddr: contractAddress,
+                 value: amountSats,
+                 unit: 'sat',
+             } as any]);
+ 
+-            fundTxId = tx.txId;
++            fundTxId = tx.txId as string;
+             console.log('[BCH→MOV] HTLC funded:', fundTxId);
+             toast.success('BCH locked in HTLC!', { description: `Tx: ${fundTxId.slice(0, 16)}...` });
+         } catch (e: any) {
+@@ -719,6 +724,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
+                 sellAmount: Math.floor(params.sellAmount * Math.pow(10, params.sellToken.decimals || 8)).toString(),
+                 buyAmount: Math.floor(params.buyAmount * 1e8).toString(),
+                 hashlock: hashlockHex,
++                sourceEscrowId: `mov_escrow_${Date.now()}`, // Placeholder until on-chain escrow is implemented
+             });
+ 
+             const intent = response.data.intent;
+@@ -942,20 +948,121 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
+                     throw new Error('Solana wallet not connected');
+                 }
+ 
+-                // Try claiming via relayer API (simpler, handles program interaction)
++                // Derive PDAs
++                const makerPubKey = new PublicKey(order.claimData.solMaker || 'VBmpGVzabx8AsptQXrA2okEwqFVjbuosHvR2NkuBoaS'); // Relayer is Maker in BCH->SOL
++                const hashBuf = Buffer.from(order.claimData.hashlock!.replace('0x', ''), 'hex');
++                const secretBuf = Buffer.from(secret.replace('0x', ''), 'hex');
++
++                // Get the token mint address (USDC or SOL NATIVE_MINT)
++                const isBuyNativeSol = !order.buyToken?.address || order.buyToken.address === 'So11111111111111111111111111111111111111112';
++                const tokenAddress = isBuyNativeSol ? 'So11111111111111111111111111111111111111112' : order.buyToken.address;
++                const tokenMint = new PublicKey(tokenAddress!);
++
++                let escrowPda: PublicKey;
++                if (order.claimData.solanaEscrowPda) {
++                    escrowPda = new PublicKey(order.claimData.solanaEscrowPda);
++                } else {
++                    [escrowPda] = PublicKey.findProgramAddressSync(
++                        [Buffer.from('escrow'), makerPubKey.toBuffer(), hashBuf],
++                        new PublicKey(SOLANA_PROGRAM_ID)
++                    );
++                }
++
++                const [vaultPda] = PublicKey.findProgramAddressSync(
++                    [Buffer.from('vault'), escrowPda.toBuffer()],
++                    new PublicKey(SOLANA_PROGRAM_ID)
++                );
++
++                const takerTokenAccount = await getAssociatedTokenAddress(tokenMint, solanaWallet.publicKey!);
++
++                // Fetch intent from Relayer to confirm Taker identity
++                console.log('[Claim] Fetching intent data to verify Taker identity...');
++                const intentRes = await axios.get(`${BCH_SOLANA_RELAYER_URL}/intents/${order.intentId}`);
++                const expectedTaker = intentRes.data?.intent?.recipientAddress;
++
++                console.log('[Claim] Expected Token/Mint:', tokenMint.toBase58());
++                console.log('[Claim] Expected Taker:', expectedTaker);
++                console.log('[Claim] Connected Taker (Signing Wallet):', solanaWallet.publicKey!.toBase58());
++
++                if (expectedTaker && expectedTaker !== solanaWallet.publicKey!.toBase58()) {
++                    throw new Error(`Wallet Mismatch! You connected ${solanaWallet.publicKey!.toBase58().slice(0, 6)}... but the escrow requires ${expectedTaker.slice(0, 6)}... to claim it.`);
++                }
++
++                // Check if user has an ATA, if not, create it first
++                const accountInfo = await solanaConnection.getAccountInfo(takerTokenAccount);
++                if (!accountInfo) {
++                    console.log('[Claim] ATA does not exist, creating it now:', takerTokenAccount.toBase58());
++                    setSwapStep('Creating Token Account (Transaction 1 of 2)...');
++
++                    const ataTx = new anchor.web3.Transaction().add(
++                        createAssociatedTokenAccountInstruction(
++                            solanaWallet.publicKey!, // Payer
++                            takerTokenAccount,      // ATA
++                            solanaWallet.publicKey!, // Owner
++                            tokenMint               // Mint
++                        )
++                    );
++
++                    ataTx.recentBlockhash = (await solanaConnection.getLatestBlockhash()).blockhash;
++                    ataTx.feePayer = solanaWallet.publicKey!;
++
++                    const ataSignature = await solanaWallet.sendTransaction(ataTx, solanaConnection);
++                    await solanaConnection.confirmTransaction(ataSignature, 'processed');
++                    console.log('[Claim] ATA Created successfully.');
++                }
++
++                const transaction = new anchor.web3.Transaction();
++
++                // Manually build instruction to avoid Anchor version mismatch IDL parsing errors
++                // The discriminator for `claim` from the IDL is [62, 198, 214, 193, 213, 159, 108, 210]
++                const CLAIM_DISCRIMINATOR = Buffer.from([62, 198, 214, 193, 213, 159, 108, 210]);
++                const data = Buffer.concat([CLAIM_DISCRIMINATOR, secretBuf]);
++
++                const ix = new anchor.web3.TransactionInstruction({
++                    programId: new PublicKey(SOLANA_PROGRAM_ID),
++                    keys: [
++                        { pubkey: solanaWallet.publicKey!, isSigner: true, isWritable: true },
++                        { pubkey: escrowPda, isSigner: false, isWritable: true },
++                        { pubkey: vaultPda, isSigner: false, isWritable: true },
++                        { pubkey: takerTokenAccount, isSigner: false, isWritable: true },
++                        { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }
++                    ],
++                    data
++                });
++
++                transaction.add(ix);
++
+                 try {
+-                    const res = await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {
+-                        intentId: orderId,
+-                        secret,
+-                    });
+-                    claimTxid = res.data.txid || res.data.destClaimTx;
+-                } catch {
+-                    // Fallback: notify relayer the secret is revealed (relayer auto-completes)
+-                    console.log('[Claim] Relayer claim endpoint not available, relayer will auto-detect secret reveal');
+-                    claimTxid = 'auto-claim-pending';
++                    // Pre-flight simulation to catch exact errors (wallets often swallow RPC errors)
++                    // Wallets typically run their own simulation, so we just set up the transaction config
++                    transaction.recentBlockhash = (await solanaConnection.getLatestBlockhash()).blockhash;
++                    transaction.feePayer = solanaWallet.publicKey!;
++
++                    // Adjust step message depending on if ATA was just created
++                    setSwapStep(accountInfo ? 'Please sign the transaction in your wallet...' : 'Please sign the claim transaction (Transaction 2 of 2)...');
++
++                    // User signs and sends transaction
++                    const signature = await solanaWallet.sendTransaction(transaction, solanaConnection);
++                    claimTxid = signature;
++
++                    setSwapStep('Waiting for confirmation...');
++                    await solanaConnection.confirmTransaction(signature, 'processed');
++
++                    // Notify relayer so it completes the BCH claim side quickly
++                    try {
++                        await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {
++                            intentId: orderId,
++                            secret,
++                        });
++                    } catch { }
++
++                } catch (err: any) {
++                    console.error('Solana Transaction Error:', err);
++                    if (err.logs) console.error('Simulation Logs:', err.logs);
++                    throw new Error(`Transaction failed: ${err.message}`);
+                 }
+ 
+-            } else if (direction === 'SOL_TO_BCH') {
++            } else if (direction === 'SOL_TO_BCH' || direction === 'MOV_TO_BCH') {
+                 // User claims on BCH (destination)
+                 setSwapStep('Claiming on BCH...');
+                 if (!bchWallet.connected || !order.claimData?.bchContractAddress) {
+@@ -977,7 +1084,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
+                     throw new Error('Not a standard P2PKH address');
+                 };
+ 
+-                // In SOL_TO_BCH, the Relayer is the Maker (locks BCH) and User is the Taker (claims BCH)
++                // In SOL_TO_BCH and MOV_TO_BCH, the Relayer is the Maker (locks BCH) and User is the Taker (claims BCH)
+                 let relayerSolAddress = '';
+                 try {
+                     const healthRes = await axios.get(`${BCH_SOLANA_RELAYER_URL}/health`);
+@@ -1052,8 +1159,8 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
+                     });
+                 } catch { }
+ 
+-            } else if (direction === 'BCH_TO_MOV' || direction === 'MOV_TO_BCH') {
+-                // Movement chain claims
++            } else if (direction === 'BCH_TO_MOV') {
++                // Movement chain claims (handled by Relayer API until Movement wallet integrated)
+                 setSwapStep('Claiming on Movement...');
+                 try {
+                     const res = await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {
+diff --git a/src/pages/BchSwapPage.tsx b/src/pages/BchSwapPage.tsx
+index 60ba829..b0aaf2a 100644
+--- a/src/pages/BchSwapPage.tsx
++++ b/src/pages/BchSwapPage.tsx
+@@ -1,16 +1,54 @@
+-import { useState } from 'react';
++import { useState, useEffect, useRef } from 'react';
+ import { BCHSwapCard } from '@/components/bch-swap/BCHSwapCard';
+ import { LimitOrderHistory } from '@/components/bch-swap/LimitOrderHistory';
+ import { BCHOrderType } from '@/types';
++import { useBCHSwapOptional } from '@/context/BCHSwapContext';
+ // ============================================================================
+ // BCH Swap Page — /bchswap
+ // ============================================================================
+ // Unified page for BCH same-chain (CashToken) and cross-chain (BCH↔Solana) swaps.
+ // Layout mirrors the existing SwapPage pattern when 'market' is selected.
+-// Expands to a two-column layout when 'limit' orders are selected.
++// Expands to a two-column layout when 'limit' orders are selected or after a swap.
+ 
+ export default function BchSwapPage() {
+     const [orderType, setOrderType] = useState<BCHOrderType>('market');
++    const [showOrders, setShowOrders] = useState(false);
++    const swapCtx = useBCHSwapOptional();
++    const prevPendingCount = useRef<number | null>(null); // null = not yet initialized
++    const swapCardRef = useRef<HTMLDivElement>(null);
++    const containerRef = useRef<HTMLDivElement>(null);
++
++    // Show orders panel ONLY when a NEW order is created (not from existing localStorage)
++    useEffect(() => {
++        const currentCount = (swapCtx?.pendingOrders?.length || 0) + (swapCtx?.completedOrders?.length || 0);
++        if (prevPendingCount.current === null) {
++            // First render — capture existing count, don't show panel
++            prevPendingCount.current = currentCount;
++            return;
++        }
++        if (currentCount > prevPendingCount.current) {
++            setShowOrders(true);
++        }
++        prevPendingCount.current = currentCount;
++    }, [swapCtx?.pendingOrders?.length, swapCtx?.completedOrders?.length]);
++
++    // Sync swap card height to CSS variable for orders panel
++    useEffect(() => {
++        const el = swapCardRef.current;
++        if (!el) return;
++        const observer = new ResizeObserver((entries) => {
++            for (const entry of entries) {
++                const h = entry.contentRect.height;
++                if (containerRef.current) {
++                    containerRef.current.style.setProperty('--swap-card-height', `${h}px`);
++                }
++            }
++        });
++        observer.observe(el);
++        return () => observer.disconnect();
++    }, []);
++
++    const panelVisible = showOrders || orderType === 'limit';
+ 
+     return (
+         <div className="container mx-auto py-10">
+@@ -21,17 +59,19 @@ export default function BchSwapPage() {
+             </div>
+ 
+             <div className="flex justify-center max-w-[1200px] mx-auto w-full transition-all duration-300">
+-                <div className={`flex w-full gap-8 transition-all duration-500 justify-center 
+-                    ${orderType === 'limit' ? 'lg:justify-start lg:gap-8 flex-col lg:flex-row' : 'max-w-[480px]'}`}
++                <div
++                    ref={containerRef}
++                    className={`flex w-full gap-8 transition-all duration-500 justify-center 
++                    ${panelVisible ? 'lg:justify-start lg:gap-8 flex-col lg:flex-row' : 'max-w-[480px]'}`}
+                 >
+                     {/* Swap Card */}
+-                    <div className="w-full lg:w-[480px] shrink-0 transform transition-transform duration-300">
++                    <div ref={swapCardRef} className="w-full lg:w-[480px] shrink-0 transform transition-transform duration-300">
+                         <BCHSwapCard orderType={orderType} onOrderTypeChange={setOrderType} />
+                     </div>
+ 
+-                    {/* Limit Order History Side Panel */}
+-                    {orderType === 'limit' && (
+-                        <div className="w-full lg:flex-1 hidden lg:block animate-in slide-in-from-right-8 fade-in-50 duration-500 fill-mode-both delay-100">
++                    {/* Orders Panel — slides in after swap or when limit mode is active */}
++                    {panelVisible && (
++                        <div className="w-full lg:flex-1 animate-in slide-in-from-right-8 fade-in-50 duration-500 fill-mode-both delay-100">
+                             <LimitOrderHistory />
+                         </div>
+                     )}
+@@ -40,3 +80,4 @@ export default function BchSwapPage() {
+         </div>
+     );
+ }
++
+diff --git a/src/pages/MonitorPage.tsx b/src/pages/MonitorPage.tsx
+index eee27b5..375e151 100644
+--- a/src/pages/MonitorPage.tsx
++++ b/src/pages/MonitorPage.tsx
+@@ -10,21 +10,22 @@ import axios from 'axios';
+ import { TOKENS } from '@/components/intent-swap/forms/TokenSelector';
+ import { ALL_BCH_SWAP_TOKENS } from '@/components/bch-swap/BCHTokenSelector';
+ import { useSwap } from '@/context/SwapContext';
+-import { ArrowRight, ExternalLink, RefreshCw, Layers, Zap, Globe, Clock, CheckCircle2, XCircle } from 'lucide-react';
++import { ArrowRight, ExternalLink, RefreshCw, Layers, Zap, Globe, Clock, CheckCircle2, XCircle, BoxSelect } from 'lucide-react';
+ import { shortenAddr } from '@/lib/utils';
++import { BCHOrder } from '@/types';
+ 
+ // ============================================================================
+ // Types & Normalization
+ // ============================================================================
+ 
+ type UnifiedOrderStatus = 'PENDING' | 'LOCKED' | 'DEST_FILLED' | 'CLAIMABLE' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
+-type OrderCategory = 'ALL' | 'SAME_CHAIN' | 'CROSS_CHAIN';
++type OrderCategory = 'ALL' | 'SAME_CHAIN' | 'CROSS_CHAIN' | 'LOCAL';
+ 
+ interface UnifiedOrder {
+     id: string;
+-    source: 'CASHTOKEN' | 'CROSSCHAIN';
+-    swapType: string;         // 'same-chain', 'bch-to-sol', 'mov-to-bch', etc
+-    orderType: string;        // 'limit', 'market'
++    source: 'CASHTOKEN' | 'CROSSCHAIN' | 'LOCAL';
++    swapType: string;
++    orderType: string;
+     status: UnifiedOrderStatus;
+ 
+     makerAddress: string;
+@@ -46,22 +47,29 @@ interface UnifiedOrder {
+     sourceExplorerUrl?: string;
+     destExplorerUrl?: string;
+ 
+-    rawIntent: any; // Keep original for debugging/expansion
++    rawIntent: any;
+ }
+ 
++// ============================================================================
++// Chain & Token icon constants
++// ============================================================================
++const CHAIN_ICONS: Record<string, string> = {
++    bch: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
++    solana: '/assets/solanaLogo.png',
++    movement: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
++};
++
++const BCH_ORDERS_KEY = 'bch_swap_orders';
++
+ export function MonitorPage() {
+-    // Relayer contexts
+     const { relayerUrl: cashtokenRelayerUrl } = useSwap();
+-    // Use environment variable for cross-chain relayer host
+     const crossChainRelayerUrl = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || 'https://cross-chain-relayer-production-a93e.up.railway.app';
+ 
+-    // State
+     const [orders, setOrders] = useState<UnifiedOrder[]>([]);
+     const [health, setHealth] = useState<{ cashtoken?: any; crosschain?: any }>({});
+     const [isLoading, setIsLoading] = useState(false);
+     const [, setLastUpdated] = useState<Date>(new Date());
+ 
+-    // Filters
+     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'HISTORY'>('ACTIVE');
+     const [categoryFilter, setCategoryFilter] = useState<OrderCategory>('ALL');
+     const [statusFilter, setStatusFilter] = useState<string>('ALL');
+@@ -84,7 +92,7 @@ export function MonitorPage() {
+                 crosschain: healthCC.status === 'fulfilled' ? healthCC.value.data : null
+             });
+ 
+-            // 2. Fetch Orders
++            // 2. Fetch Orders from relayers
+             const [intentsCT, ordersCC] = await Promise.allSettled([
+                 axios.get(`${cashtokenRelayerUrl}/intents`),
+                 axios.get(`${crossChainRelayerUrl}/orders`)
+@@ -96,7 +104,6 @@ export function MonitorPage() {
+             if (intentsCT.status === 'fulfilled' && intentsCT.value.data) {
+                 const { active = [], completed = [] } = intentsCT.value.data;
+                 const processCashToken = (intent: any, isCompleted: boolean): UnifiedOrder => {
+-                    // Try to resolve exactly from TOKENS or ALL_BCH_SWAP_TOKENS
+                     const sToken = findTokenInRegistries(intent.sell_token_type) || { symbol: 'UNK', decimals: 8, icon: '' };
+                     const bToken = findTokenInRegistries(intent.buy_token_type) || { symbol: 'UNK', decimals: 8, icon: '' };
+ 
+@@ -117,7 +124,7 @@ export function MonitorPage() {
+                         sellAmountFormatted: formatTokenAmount(intent.sell_amount, sToken.decimals),
+                         buyAmountFormatted: formatTokenAmount(intent.buy_amount || intent.start_buy_amount, bToken.decimals),
+                         createdAt: intent.timestamp,
+-                        updatedAt: intent.timestamp, // Cashtoken relayer doesn't update intents often
++                        updatedAt: intent.timestamp,
+                         expiryTime: intent.end_time ? intent.end_time * 1000 : undefined,
+                         sourceTxId: intent.hash,
+                         sourceExplorerUrl: intent.hash ? `https://chipnet.chaingraph.cash/tx/${intent.hash}` : undefined,
+@@ -132,31 +139,32 @@ export function MonitorPage() {
+                 ];
+             }
+ 
+-            // Process CrossChain Orders
++            // Process CrossChain Orders from relayer
+             if (ordersCC.status === 'fulfilled' && ordersCC.value.data) {
+                 const { active = [], completed = [] } = ordersCC.value.data;
+-                const processCrossChain = (intent: any): UnifiedOrder => {
++                const processCrossChain = (intent: any, isCompleted: boolean = false): UnifiedOrder => {
+                     const sToken = resolveCrossChainToken(intent.direction, 'SELL');
+                     const bToken = resolveCrossChainToken(intent.direction, 'BUY');
+ 
+-                    // Map specific CC statuses
+                     let status: UnifiedOrderStatus = 'PENDING';
+-                    if (intent.status === 'SOURCE_LOCKED') status = 'LOCKED';
++                    if (isCompleted) {
++                        status = 'COMPLETED';
++                    } else if (intent.status === 'SOURCE_LOCKED') status = 'LOCKED';
+                     else if (intent.status === 'DEST_FILLED') status = 'DEST_FILLED';
+                     else if (intent.status === 'DEST_CLAIMED') status = 'CLAIMABLE';
+                     else if (intent.status === 'COMPLETED') status = 'COMPLETED';
+ 
+-                    if (intent.status !== 'COMPLETED' && intent.sourceTimelock && (Date.now() / 1000) > intent.sourceTimelock) {
+-                        status = 'EXPIRED'; // Simplistic timeout
++                    if (status !== 'COMPLETED' && intent.sourceTimelock && (Date.now() / 1000) > intent.sourceTimelock) {
++                        status = 'EXPIRED';
+                     }
+ 
+                     return {
+                         id: intent.id,
+                         source: 'CROSSCHAIN',
+-                        swapType: intent.direction.toLowerCase().replace(/_/g, '-'),
+-                        orderType: 'limit', // CC is implicitly limit
++                        swapType: intent.direction?.toLowerCase().replace(/_/g, '-') || 'cross-chain',
++                        orderType: 'limit',
+                         status,
+-                        makerAddress: intent.makerAddress,
++                        makerAddress: intent.makerAddress || 'Unknown',
+                         recipientAddress: intent.recipientAddress,
+                         sellToken: sToken,
+                         buyToken: bToken,
+@@ -164,25 +172,69 @@ export function MonitorPage() {
+                         buyAmountRaw: intent.buyAmount,
+                         sellAmountFormatted: formatTokenAmount(intent.sellAmount, sToken?.decimals || 8),
+                         buyAmountFormatted: formatTokenAmount(intent.buyAmount, bToken?.decimals || 8),
+-                        createdAt: intent.createdAt * 1000,
+-                        updatedAt: intent.updatedAt * 1000,
++                        createdAt: intent.createdAt ? intent.createdAt * 1000 : Date.now(),
++                        updatedAt: intent.updatedAt ? intent.updatedAt * 1000 : Date.now(),
+                         expiryTime: intent.sourceTimelock ? intent.sourceTimelock * 1000 : undefined,
+                         sourceTxId: intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId,
+                         destTxId: intent.destFillTx || intent.destClaimTx,
+-                        sourceExplorerUrl: buildExplorerUrl(intent.direction, 'SOURCE', intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId),
+-                        destExplorerUrl: buildExplorerUrl(intent.direction, 'DEST', intent.destFillTx || intent.destClaimTx),
++                        sourceExplorerUrl: buildExplorerUrl(intent.direction, 'SOURCE', intent),
++                        destExplorerUrl: buildExplorerUrl(intent.direction, 'DEST', intent),
+                         rawIntent: intent
+                     };
+                 };
+ 
+                 unified = [
+                     ...unified,
+-                    ...active.map(processCrossChain),
+-                    ...completed.map(processCrossChain)
++                    ...active.map((i: any) => processCrossChain(i, false)),
++                    ...completed.map((i: any) => processCrossChain(i, true))
+                 ];
+             }
+ 
+-            // Sort by latest
++            // 3. Pull local BCH orders from localStorage
++            try {
++                const saved = localStorage.getItem(BCH_ORDERS_KEY);
++                if (saved) {
++                    const bchOrders: BCHOrder[] = JSON.parse(saved);
++                    const localOrders = bchOrders.map((order): UnifiedOrder => {
++                        let status: UnifiedOrderStatus = 'PENDING';
++                        if (order.status === 'filled' || order.status === 'claimed') status = 'COMPLETED';
++                        else if (order.status === 'claimable') status = 'CLAIMABLE';
++                        else if (order.status === 'cancelled') status = 'FAILED';
++                        else if (order.status === 'expired') status = 'EXPIRED';
++
++                        const sourceChain = getSourceChain(order.swapType);
++                        const destChain = getDestChain(order.swapType);
++
++                        return {
++                            id: `local_${order.id}`,
++                            source: 'LOCAL',
++                            swapType: order.swapType,
++                            orderType: order.orderType || 'market',
++                            status,
++                            makerAddress: order.contractAddress || 'Local Wallet',
++                            sellToken: order.sellToken || { symbol: '?', decimals: 8, icon: '' },
++                            buyToken: order.buyToken || { symbol: '?', decimals: 8, icon: '' },
++                            sellAmountRaw: String(order.sellAmount),
++                            buyAmountRaw: String(order.buyAmount),
++                            sellAmountFormatted: String(order.sellAmount),
++                            buyAmountFormatted: Number(order.buyAmount).toFixed(4),
++                            createdAt: order.createdAt,
++                            updatedAt: order.createdAt,
++                            sourceTxId: order.txid,
++                            destTxId: order.fillTxid,
++                            sourceExplorerUrl: buildLocalExplorerUrl(order, 'source'),
++                            destExplorerUrl: buildLocalExplorerUrl(order, 'dest'),
++                            rawIntent: order,
++                        };
++                    });
++
++                    // Deduplicate — skip local if relayer already has the same intent
++                    const existingIds = new Set(unified.map(o => o.rawIntent?.id));
++                    const uniqueLocal = localOrders.filter(lo => !existingIds.has(lo.rawIntent?.intentId));
++                    unified = [...unified, ...uniqueLocal];
++                }
++            } catch { /* non-fatal */ }
++
+             unified.sort((a, b) => b.createdAt - a.createdAt);
+             setOrders(unified);
+             setLastUpdated(new Date());
+@@ -220,15 +272,20 @@ export function MonitorPage() {
+     };
+ 
+     const resolveCrossChainToken = (direction: string, side: 'SELL' | 'BUY') => {
++        if (!direction) return { symbol: 'UNK', decimals: 8, icon: '' };
++
+         const isBchSell = direction.startsWith('BCH_');
++        const isSolSell = direction.startsWith('SOL_');
++        const isMovSell = direction.startsWith('MOV_');
++
+         if (side === 'SELL') {
+-            if (isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH');
+-            if (direction.includes('SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL');
+-            if (direction.includes('MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE');
++            if (isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH') || { symbol: 'BCH', decimals: 8, icon: CHAIN_ICONS.bch };
++            if (isSolSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL') || { symbol: 'SOL', decimals: 9, icon: CHAIN_ICONS.solana };
++            if (isMovSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE') || { symbol: 'MOVE', decimals: 8, icon: CHAIN_ICONS.movement };
+         } else {
+-            if (!isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH');
+-            if (direction.includes('SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL');
+-            if (direction.includes('MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE');
++            if (direction.endsWith('_BCH')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH') || { symbol: 'BCH', decimals: 8, icon: CHAIN_ICONS.bch };
++            if (direction.endsWith('_SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL') || { symbol: 'SOL', decimals: 9, icon: CHAIN_ICONS.solana };
++            if (direction.endsWith('_MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE') || { symbol: 'MOVE', decimals: 8, icon: CHAIN_ICONS.movement };
+         }
+         return { symbol: 'UNK', decimals: 8, icon: '' };
+     };
+@@ -238,36 +295,84 @@ export function MonitorPage() {
+     const formatTokenAmount = (raw: string | number, decimals: number = 8) => {
+         if (!raw) return '0.00';
+         const val = Number(raw) / Math.pow(10, decimals);
++        if (isNaN(val)) return '0.00';
+         return val.toLocaleString(undefined, { maximumFractionDigits: val < 0.01 ? 6 : 4 });
+     };
+ 
+-    const buildExplorerUrl = (direction: string, leg: 'SOURCE' | 'DEST', identifier: string) => {
+-        if (!identifier) return undefined;
+-        // Simplistic router based on chain direction
+-        const isBch = (leg === 'SOURCE' && direction.startsWith('BCH_')) || (leg === 'DEST' && direction.endsWith('_BCH'));
+-        const isSol = (leg === 'SOURCE' && direction.startsWith('SOL_')) || (leg === 'DEST' && direction.endsWith('_SOL'));
+-        const isMov = (leg === 'SOURCE' && direction.startsWith('MOV_')) || (leg === 'DEST' && direction.endsWith('_MOV'));
++    const getSourceChain = (swapType: string): string => {
++        if (swapType.startsWith('bch')) return 'bch';
++        if (swapType.startsWith('sol')) return 'solana';
++        if (swapType.startsWith('mov')) return 'movement';
++        return 'bch';
++    };
++
++    const getDestChain = (swapType: string): string => {
++        if (swapType.endsWith('bch') || swapType === 'same-chain') return 'bch';
++        if (swapType.endsWith('sol')) return 'solana';
++        if (swapType.endsWith('mov')) return 'movement';
++        return 'bch';
++    };
++
++    const buildExplorerUrl = (direction: string, leg: 'SOURCE' | 'DEST', intent: any): string | undefined => {
++        if (!direction) return undefined;
++
++        if (leg === 'SOURCE') {
++            const id = intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId;
++            if (!id) return undefined;
+ 
+-        if (isBch) return `https://chipnet.chaingraph.cash/tx/${identifier}`; // Using tx as fallback
+-        if (isSol) return `https://explorer.solana.com/tx/${identifier}?cluster=devnet`;
+-        if (isMov) return `https://explorer.movementnetwork.xyz/txn/${identifier}?network=testnet`;
++            if (direction.startsWith('BCH_')) {
++                // BCH contract addresses need /address/ not /tx/
++                return id.startsWith('bchtest:') || id.startsWith('bitcoincash:')
++                    ? `https://chipnet.chaingraph.cash/address/${id}`
++                    : `https://chipnet.chaingraph.cash/tx/${id}`;
++            }
++            if (direction.startsWith('SOL_')) return `https://explorer.solana.com/tx/${id}?cluster=devnet`;
++            if (direction.startsWith('MOV_')) return `https://explorer.movementnetwork.xyz/txn/${id}?network=testnet`;
++        } else {
++            const id = intent.destFillTx || intent.destClaimTx;
++            if (!id) return undefined;
++
++            if (direction.endsWith('_BCH')) {
++                return id.startsWith('bchtest:') || id.startsWith('bitcoincash:')
++                    ? `https://chipnet.chaingraph.cash/address/${id}`
++                    : `https://chipnet.chaingraph.cash/tx/${id}`;
++            }
++            if (direction.endsWith('_SOL')) return `https://explorer.solana.com/tx/${id}?cluster=devnet`;
++            if (direction.endsWith('_MOV')) return `https://explorer.movementnetwork.xyz/txn/${id}?network=testnet`;
++        }
+         return undefined;
+     };
+ 
++    const buildLocalExplorerUrl = (order: BCHOrder, leg: 'source' | 'dest'): string | undefined => {
++        if (leg === 'source') {
++            if (order.explorerUrl) return order.explorerUrl;
++            if (order.contractAddress) return `https://chipnet.chaingraph.cash/address/${order.contractAddress}`;
++            if (order.txid) return `https://chipnet.chaingraph.cash/tx/${order.txid}`;
++            return undefined;
++        } else {
++            if (order.destExplorerUrl) return order.destExplorerUrl;
++            if (!order.fillTxid) return undefined;
++
++            if (order.swapType === 'bch-to-sol') return `https://explorer.solana.com/tx/${order.fillTxid}?cluster=devnet`;
++            if (order.swapType === 'bch-to-mov') return `https://explorer.movementnetwork.xyz/txn/${order.fillTxid}?network=testnet`;
++            if (order.swapType === 'sol-to-bch') return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
++            if (order.swapType === 'mov-to-bch') return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
++            return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
++        }
++    };
++
+     // ============================================================================
+     // Filtering Logic
+     // ============================================================================
+ 
+     const filteredOrders = orders.filter(order => {
+-        // Tab Filter
+         if (activeTab === 'ACTIVE' && (order.status === 'COMPLETED' || order.status === 'FAILED' || order.status === 'EXPIRED')) return false;
+         if (activeTab === 'HISTORY' && (order.status !== 'COMPLETED' && order.status !== 'FAILED' && order.status !== 'EXPIRED')) return false;
+ 
+-        // Category Filter
+         if (categoryFilter === 'SAME_CHAIN' && order.source !== 'CASHTOKEN') return false;
+         if (categoryFilter === 'CROSS_CHAIN' && order.source !== 'CROSSCHAIN') return false;
++        if (categoryFilter === 'LOCAL' && order.source !== 'LOCAL') return false;
+ 
+-        // Status Filter
+         if (statusFilter !== 'ALL' && order.status !== statusFilter) return false;
+ 
+         return true;
+@@ -278,6 +383,29 @@ export function MonitorPage() {
+     // ============================================================================
+ 
+     const renderTypeBadge = (order: UnifiedOrder) => {
++        if (order.source === 'LOCAL') {
++            const swapLabels: Record<string, string> = {
++                'same-chain': 'CashToken',
++                'bch-to-sol': 'BCH → SOL',
++                'sol-to-bch': 'SOL → BCH',
++                'bch-to-mov': 'BCH → MOVE',
++                'mov-to-bch': 'MOVE → BCH',
++            };
++            const label = swapLabels[order.swapType] || order.swapType;
++            const isCross = order.swapType !== 'same-chain';
++            return (
++                <div className="flex items-center gap-1.5">
++                    <Badge variant="outline" className={`text-[10px] py-0 ${isCross ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
++                        {isCross ? <Globe className="h-3 w-3 mr-1" /> : <Zap className="h-3 w-3 mr-1" />}
++                        {label}
++                    </Badge>
++                    <Badge variant="outline" className="bg-teal-500/10 text-teal-400 border-teal-500/20 text-[10px] py-0">
++                        Local
++                    </Badge>
++                </div>
++            );
++        }
++
+         if (order.source === 'CASHTOKEN') {
+             return (
+                 <div className="flex items-center gap-1.5">
+@@ -300,10 +428,10 @@ export function MonitorPage() {
+                 <div className="flex items-center gap-1.5">
+                     <Badge variant="outline" className={`${color} text-[10px] py-0`}>
+                         <Globe className="h-3 w-3 mr-1" />
+-                        {label.replace('-', ' → ')}
++                        {label.replace(/-/g, ' → ')}
+                     </Badge>
+                     <Badge variant="outline" className="bg-zinc-800 text-zinc-300 border-zinc-700 text-[10px] py-0">
+-                        Limit
++                        HTLC
+                     </Badge>
+                 </div>
+             );
+@@ -323,6 +451,27 @@ export function MonitorPage() {
+         }
+     };
+ 
++    const getChainIcon = (swapType: string, leg: 'source' | 'dest'): string | null => {
++        const st = swapType.toLowerCase();
++        if (leg === 'source') {
++            if (st.startsWith('bch') || st === 'same-chain') return CHAIN_ICONS.bch;
++            if (st.startsWith('sol')) return CHAIN_ICONS.solana;
++            if (st.startsWith('mov')) return CHAIN_ICONS.movement;
++        } else {
++            if (st.endsWith('bch') || st === 'same-chain') return CHAIN_ICONS.bch;
++            if (st.endsWith('sol')) return CHAIN_ICONS.solana;
++            if (st.endsWith('mov')) return CHAIN_ICONS.movement;
++        }
++        return null;
++    };
++
++    const safePrice = (buyFormatted: string, sellFormatted: string): string => {
++        const b = parseFloat(buyFormatted.replace(/,/g, ''));
++        const s = parseFloat(sellFormatted.replace(/,/g, ''));
++        if (!s || isNaN(b) || isNaN(s)) return '—';
++        return (b / s).toFixed(4);
++    };
++
+     return (
+         <div className="w-full space-y-6">
+ 
+@@ -338,7 +487,6 @@ export function MonitorPage() {
+                 </div>
+ 
+                 <div className="flex flex-wrap items-center gap-3">
+-                    {/* CashToken Health */}
+                     <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-mono">
+                         <span className="text-zinc-500 uppercase">CashTokens</span>
+                         {health.cashtoken ? (
+@@ -347,7 +495,6 @@ export function MonitorPage() {
+                             <span className="flex items-center gap-1.5 text-red-500"><div className="w-2 h-2 rounded-full bg-red-500" /> OFFLINE</span>
+                         )}
+                     </div>
+-                    {/* Cross-Chain Health */}
+                     <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-mono">
+                         <span className="text-zinc-500 uppercase">Cross-Chain</span>
+                         {health.crosschain ? (
+@@ -376,18 +523,19 @@ export function MonitorPage() {
+ 
+                         <div className="flex items-center gap-3">
+                             <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as any)}>
+-                                <SelectTrigger className="w-[140px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
++                                <SelectTrigger className="w-[150px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
+                                     <SelectValue placeholder="Network" />
+                                 </SelectTrigger>
+                                 <SelectContent className="bg-zinc-900 border-zinc-800">
+-                                    <SelectItem value="ALL">All Networks</SelectItem>
++                                    <SelectItem value="ALL">All Sources</SelectItem>
+                                     <SelectItem value="SAME_CHAIN">Same-Chain (BCH)</SelectItem>
+                                     <SelectItem value="CROSS_CHAIN">Cross-Chain (HTLC)</SelectItem>
++                                    <SelectItem value="LOCAL">My Orders (Local)</SelectItem>
+                                 </SelectContent>
+                             </Select>
+ 
+                             <Select value={statusFilter} onValueChange={setStatusFilter}>
+-                                <SelectTrigger className="w-[140px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
++                                <SelectTrigger className="w-[150px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
+                                     <SelectValue placeholder="Status" />
+                                 </SelectTrigger>
+                                 <SelectContent className="bg-zinc-900 border-zinc-800">
+@@ -395,6 +543,7 @@ export function MonitorPage() {
+                                     <SelectItem value="PENDING">Pending</SelectItem>
+                                     <SelectItem value="LOCKED">Locked</SelectItem>
+                                     <SelectItem value="DEST_FILLED">Dest Filled</SelectItem>
++                                    <SelectItem value="CLAIMABLE">Claimable</SelectItem>
+                                     <SelectItem value="COMPLETED">Completed</SelectItem>
+                                     <SelectItem value="FAILED">Failed</SelectItem>
+                                     <SelectItem value="EXPIRED">Expired</SelectItem>
+@@ -409,9 +558,9 @@ export function MonitorPage() {
+                             <TableHeader className="bg-zinc-900/30">
+                                 <TableRow className="border-white/5 hover:bg-transparent">
+                                     <TableHead className="w-[160px] text-xs font-semibold text-zinc-400">Created At</TableHead>
+-                                    <TableHead className="text-xs font-semibold text-zinc-400">Trade Configuration</TableHead>
+-                                    <TableHead className="text-xs font-semibold text-zinc-400">Prices & Routing</TableHead>
+-                                    <TableHead className="text-xs font-semibold text-zinc-400">Status & Timeout</TableHead>
++                                    <TableHead className="text-xs font-semibold text-zinc-400">Trade</TableHead>
++                                    <TableHead className="text-xs font-semibold text-zinc-400">Details</TableHead>
++                                    <TableHead className="text-xs font-semibold text-zinc-400">Status</TableHead>
+                                     <TableHead className="text-right text-xs font-semibold text-zinc-400">Explorers</TableHead>
+                                 </TableRow>
+                             </TableHeader>
+@@ -419,7 +568,10 @@ export function MonitorPage() {
+                                 {filteredOrders.length === 0 ? (
+                                     <TableRow>
+                                         <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+-                                            {isLoading ? 'Loading intent networks...' : 'No orders found matching criteria.'}
++                                            <div className="flex flex-col items-center gap-2">
++                                                <BoxSelect className="h-10 w-10 text-zinc-700" strokeWidth={0.5} />
++                                                {isLoading ? 'Loading intent networks...' : 'No orders found matching criteria.'}
++                                            </div>
+                                         </TableCell>
+                                     </TableRow>
+                                 ) : (
+@@ -427,6 +579,8 @@ export function MonitorPage() {
+                                         const now = Date.now();
+                                         const isExpired = order.expiryTime && now > order.expiryTime;
+                                         const isCompleted = order.status === 'COMPLETED' || order.status === 'FAILED';
++                                        const sourceChainIcon = getChainIcon(order.swapType, 'source');
++                                        const destChainIcon = getChainIcon(order.swapType, 'dest');
+ 
+                                         return (
+                                             <TableRow key={order.id} className="border-white/5 hover:bg-white/[0.02] transition-colors group">
+@@ -442,31 +596,47 @@ export function MonitorPage() {
+                                                     </div>
+                                                 </TableCell>
+ 
+-                                                {/* CONFIGURATION */}
++                                                {/* TRADE CONFIG */}
+                                                 <TableCell className="align-top py-4">
+                                                     <div className="flex flex-col gap-2">
+                                                         {renderTypeBadge(order)}
+-                                                        <div className="flex items-center gap-1.5 bg-zinc-900/50 w-fit px-2 py-1 rounded-md border border-zinc-800">
+-                                                            <div className="flex items-center gap-1.5">
+-                                                                {order.sellToken?.icon ? <img src={order.sellToken.icon} className="w-4 h-4 rounded-full" /> : <div className="w-4 h-4 rounded-full bg-zinc-800" />}
+-                                                                <span className="text-xs font-medium text-zinc-300">{order.sellAmountFormatted} {order.sellToken?.symbol}</span>
++                                                        <div className="flex items-center gap-1.5 bg-zinc-900/50 w-fit px-2.5 py-1.5 rounded-md border border-zinc-800">
++                                                            {/* Sell token with chain badge */}
++                                                            <div className="relative flex-shrink-0">
++                                                                <div className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
++                                                                    {order.sellToken?.icon ? <img src={order.sellToken.icon} className="w-4 h-4 object-contain" /> : <span className="text-[7px] text-zinc-500">{order.sellToken?.symbol?.[0]}</span>}
++                                                                </div>
++                                                                {sourceChainIcon && (
++                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-zinc-950 border border-zinc-700 flex items-center justify-center overflow-hidden">
++                                                                        <img src={sourceChainIcon} className="w-2 h-2 object-contain" />
++                                                                    </div>
++                                                                )}
+                                                             </div>
+-                                                            <ArrowRight className="w-3 h-3 text-zinc-600" />
+-                                                            <div className="flex items-center gap-1.5">
+-                                                                {order.buyToken?.icon ? <img src={order.buyToken.icon} className="w-4 h-4 rounded-full" /> : <div className="w-4 h-4 rounded-full bg-zinc-800" />}
+-                                                                <span className="text-xs font-medium text-zinc-300">{order.buyAmountFormatted} {order.buyToken?.symbol}</span>
++                                                            <span className="text-xs font-medium text-zinc-300">{order.sellAmountFormatted} {order.sellToken?.symbol}</span>
++                                                            <ArrowRight className="w-3 h-3 text-zinc-600 mx-0.5" />
++                                                            {/* Buy token with chain badge */}
++                                                            <div className="relative flex-shrink-0">
++                                                                <div className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
++                                                                    {order.buyToken?.icon ? <img src={order.buyToken.icon} className="w-4 h-4 object-contain" /> : <span className="text-[7px] text-zinc-500">{order.buyToken?.symbol?.[0]}</span>}
++                                                                </div>
++                                                                {destChainIcon && (
++                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-zinc-950 border border-zinc-700 flex items-center justify-center overflow-hidden">
++                                                                        <img src={destChainIcon} className="w-2 h-2 object-contain" />
++                                                                    </div>
++                                                                )}
+                                                             </div>
++                                                            <span className="text-xs font-medium text-zinc-300">{order.buyAmountFormatted} {order.buyToken?.symbol}</span>
+                                                         </div>
+                                                     </div>
+                                                 </TableCell>
+ 
+-                                                {/* PRICING & ROUTING */}
++                                                {/* DETAILS */}
+                                                 <TableCell className="align-top py-4">
+                                                     <div className="flex flex-col gap-1.5">
+                                                         <div className="flex items-center gap-2">
+                                                             <span className="text-xs text-zinc-500 w-12">Price:</span>
+                                                             <span className="text-xs font-mono text-emerald-400">
+-                                                                {(Number(order.buyAmountFormatted) / Number(order.sellAmountFormatted)).toFixed(4)} {order.buyToken?.symbol}/{order.sellToken?.symbol}
++                                                                {safePrice(order.buyAmountFormatted, order.sellAmountFormatted)} {order.buyToken?.symbol}/{order.sellToken?.symbol}
+                                                             </span>
+                                                         </div>
+                                                         <div className="flex items-baseline gap-2">
+@@ -478,7 +648,7 @@ export function MonitorPage() {
+                                                     </div>
+                                                 </TableCell>
+ 
+-                                                {/* STATUS & TIMEOUTS */}
++                                                {/* STATUS */}
+                                                 <TableCell className="align-top py-4">
+                                                     <div className="flex flex-col gap-2 items-start">
+                                                         {renderStatusBadge(order.status)}
+@@ -503,7 +673,7 @@ export function MonitorPage() {
+                                                             <span className="text-xs text-zinc-700 font-mono px-2 py-1">No Source Tx</span>
+                                                         )}
+ 
+-                                                        {order.source === 'CROSSCHAIN' && (
++                                                        {order.source !== 'CASHTOKEN' && (
+                                                             order.destExplorerUrl ? (
+                                                                 <a href={order.destExplorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 bg-purple-500/5 px-2 py-1 rounded-md transition-colors border border-transparent hover:border-purple-500/20">
+                                                                     <span className="font-mono">Dest Tx</span>
+@@ -527,4 +697,3 @@ export function MonitorPage() {
+         </div>
+     );
+ }
+-
