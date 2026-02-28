@@ -11,6 +11,7 @@ import { BCHTokenSelector, BCH_TOKENS, SOLANA_TOKENS, ALL_BCH_SWAP_TOKENS } from
 import { useBCHWallet } from '@/context/BCHWalletProvider';
 import { useBCHSwap } from '@/context/BCHSwapContext';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
+import { useWallet as useMovementWallet } from '@/context/wallet-provider';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PriceService, PRICE_FEEDS } from '@/lib/pyth';
 import { CauldronService } from '@/lib/cauldron';
@@ -48,6 +49,7 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
     const bchWallet = useBCHWallet();
     const { detectSwapType, executeSwap, isLoading, swapStep } = useBCHSwap();
     const solanaWallet = useSolanaWallet();
+    const { account: movementAccount } = useMovementWallet();
 
     // Auto-detect swap type
     const swapType: BCHSwapType = useMemo(() => {
@@ -199,9 +201,8 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
             recipientAddress = solanaWallet.publicKey.toBase58();
         } else if ((swapType === 'sol-to-bch' || swapType === 'mov-to-bch') && bchWallet.address) {
             recipientAddress = bchWallet.address;
-        } else if (swapType === 'bch-to-mov') {
-            // TODO: Use integrated Movement wallet address when available
-            recipientAddress = '';
+        } else if (swapType === 'bch-to-mov' && movementAccount?.address) {
+            recipientAddress = movementAccount.address.toString();
         }
 
         try {
