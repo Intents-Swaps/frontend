@@ -33,11 +33,33 @@ function OrderRow({ order }: { order: BCHOrder }) {
         'same-chain': 'Same Chain',
         'bch-to-sol': 'BCH → SOL',
         'sol-to-bch': 'SOL → BCH',
+        'bch-to-mov': 'BCH → MOVE',
+        'mov-to-bch': 'MOVE → BCH',
     };
+
+    const sellIcon = order.sellToken?.icon;
+    const buyIcon = order.buyToken?.icon;
 
     return (
         <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
             <div className="flex items-center gap-2.5 min-w-0">
+                {/* Token pair icons */}
+                <div className="flex items-center -space-x-1 flex-shrink-0">
+                    <div className="h-5 w-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden z-[1]">
+                        {sellIcon ? (
+                            <img src={sellIcon} alt={order.sellToken?.symbol} className="h-3.5 w-3.5 object-contain" />
+                        ) : (
+                            <span className="text-[7px] font-bold text-muted-foreground">{order.sellToken?.symbol?.[0] || '?'}</span>
+                        )}
+                    </div>
+                    <div className="h-5 w-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                        {buyIcon ? (
+                            <img src={buyIcon} alt={order.buyToken?.symbol} className="h-3.5 w-3.5 object-contain" />
+                        ) : (
+                            <span className="text-[7px] font-bold text-muted-foreground">{order.buyToken?.symbol?.[0] || '?'}</span>
+                        )}
+                    </div>
+                </div>
                 {config.icon}
                 <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -55,7 +77,7 @@ function OrderRow({ order }: { order: BCHOrder }) {
                 <Badge variant={config.badge} className="text-[9px] h-4 px-1.5">{config.label}</Badge>
                 {order.txid && (
                     <a
-                        href={`https://chipnet.chaingraph.cash/tx/${order.txid}`}
+                        href={order.explorerUrl || `https://chipnet.chaingraph.cash/tx/${order.txid}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-muted-foreground hover:text-foreground"

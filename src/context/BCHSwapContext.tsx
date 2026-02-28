@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
-import { toast } from 'sonner';
+import { notifyToast as toast } from '@/lib/notify-toast';
 import { useBCHWallet } from './BCHWalletProvider';
 import { useWallet as useSolanaWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
@@ -7,6 +7,8 @@ import { BCHSwapParams, BCHSwapType, BCHOrder } from '@/types';
 import { BCH_SOLANA_RELAYER_URL, CASHTOKEN_RELAYER_URL } from '@/lib/config';
 import axios from 'axios';
 import * as anchor from '@coral-xyz/anchor';
+import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, getAccount } from '@solana/spl-token';
+import idl from '@/lib/intent_swap_idl.json';
 
 // Lazy-loaded imports for CashScript (large bundle)
 let cashscriptModule: any = null;
@@ -634,22 +636,25 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
         const contractAddress = contract.address;
         console.log('[BCH→MOV] HTLC address:', contractAddress);
 
-        // 3. Fund HTLC
-        setSwapStep('Funding HTLC...');
+        // 3. Fund HTLC (same pattern as BCH→SOL)
+        setSwapStep('Signing BCH transaction...');
         let fundTxId: string;
         try {
             const amountSats = Math.floor(params.sellAmount * 1e8);
-            const wif = (bchWallet as any).wallet?.privateKeyWif || (bchWallet as any).privateKeyWif;
-            if (!wif) throw new Error('WIF not available');
-            const sentTo = contract.tokenAddress || contractAddress;
+            const wif = bchWallet.getWIF();
+            if (!wif) throw new Error('WIF not available — please reconnect your BCH wallet');
 
-            const tx = await (bchWallet as any).wallet.send([{
-                cashaddr: sentTo,
+            const { TestNetWallet } = await import('mainnet-js');
+            const wallet = await TestNetWallet.fromWIF(wif);
+
+            setSwapStep(`Sending ${params.sellAmount} BCH to HTLC...`);
+            const tx = await wallet.send([{
+                cashaddr: contractAddress,
                 value: amountSats,
                 unit: 'sat',
             } as any]);
 
-            fundTxId = tx.txId;
+            fundTxId = tx.txId as string;
             console.log('[BCH→MOV] HTLC funded:', fundTxId);
             toast.success('BCH locked in HTLC!', { description: `Tx: ${fundTxId.slice(0, 16)}...` });
         } catch (e: any) {
@@ -719,6 +724,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                 sellAmount: Math.floor(params.sellAmount * Math.pow(10, params.sellToken.decimals || 8)).toString(),
                 buyAmount: Math.floor(params.buyAmount * 1e8).toString(),
                 hashlock: hashlockHex,
+                sourceEscrowId: `mov_escrow_${Date.now()}`, // Placeholder until on-chain escrow is implemented
             });
 
             const intent = response.data.intent;
@@ -942,20 +948,121 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                     throw new Error('Solana wallet not connected');
                 }
 
-                // Try claiming via relayer API (simpler, handles program interaction)
-                try {
-                    const res = await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {
-                        intentId: orderId,
-                        secret,
-                    });
-                    claimTxid = res.data.txid || res.data.destClaimTx;
-                } catch {
-                    // Fallback: notify relayer the secret is revealed (relayer auto-completes)
-                    console.log('[Claim] Relayer claim endpoint not available, relayer will auto-detect secret reveal');
-                    claimTxid = 'auto-claim-pending';
+                // Derive PDAs
+                const makerPubKey = new PublicKey(order.claimData.solMaker || 'VBmpGVzabx8AsptQXrA2okEwqFVjbuosHvR2NkuBoaS'); // Relayer is Maker in BCH->SOL
+                const hashBuf = Buffer.from(order.claimData.hashlock!.replace('0x', ''), 'hex');
+                const secretBuf = Buffer.from(secret.replace('0x', ''), 'hex');
+
+                // Get the token mint address (USDC or SOL NATIVE_MINT)
+                const isBuyNativeSol = !order.buyToken?.address || order.buyToken.address === 'So11111111111111111111111111111111111111112';
+                const tokenAddress = isBuyNativeSol ? 'So11111111111111111111111111111111111111112' : order.buyToken.address;
+                const tokenMint = new PublicKey(tokenAddress!);
+
+                let escrowPda: PublicKey;
+                if (order.claimData.solanaEscrowPda) {
+                    escrowPda = new PublicKey(order.claimData.solanaEscrowPda);
+                } else {
+                    [escrowPda] = PublicKey.findProgramAddressSync(
+                        [Buffer.from('escrow'), makerPubKey.toBuffer(), hashBuf],
+                        new PublicKey(SOLANA_PROGRAM_ID)
+                    );
                 }
 
-            } else if (direction === 'SOL_TO_BCH') {
+                const [vaultPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from('vault'), escrowPda.toBuffer()],
+                    new PublicKey(SOLANA_PROGRAM_ID)
+                );
+
+                const takerTokenAccount = await getAssociatedTokenAddress(tokenMint, solanaWallet.publicKey!);
+
+                // Fetch intent from Relayer to confirm Taker identity
+                console.log('[Claim] Fetching intent data to verify Taker identity...');
+                const intentRes = await axios.get(`${BCH_SOLANA_RELAYER_URL}/intents/${order.intentId}`);
+                const expectedTaker = intentRes.data?.intent?.recipientAddress;
+
+                console.log('[Claim] Expected Token/Mint:', tokenMint.toBase58());
+                console.log('[Claim] Expected Taker:', expectedTaker);
+                console.log('[Claim] Connected Taker (Signing Wallet):', solanaWallet.publicKey!.toBase58());
+
+                if (expectedTaker && expectedTaker !== solanaWallet.publicKey!.toBase58()) {
+                    throw new Error(`Wallet Mismatch! You connected ${solanaWallet.publicKey!.toBase58().slice(0, 6)}... but the escrow requires ${expectedTaker.slice(0, 6)}... to claim it.`);
+                }
+
+                // Check if user has an ATA, if not, create it first
+                const accountInfo = await solanaConnection.getAccountInfo(takerTokenAccount);
+                if (!accountInfo) {
+                    console.log('[Claim] ATA does not exist, creating it now:', takerTokenAccount.toBase58());
+                    setSwapStep('Creating Token Account (Transaction 1 of 2)...');
+
+                    const ataTx = new anchor.web3.Transaction().add(
+                        createAssociatedTokenAccountInstruction(
+                            solanaWallet.publicKey!, // Payer
+                            takerTokenAccount,      // ATA
+                            solanaWallet.publicKey!, // Owner
+                            tokenMint               // Mint
+                        )
+                    );
+
+                    ataTx.recentBlockhash = (await solanaConnection.getLatestBlockhash()).blockhash;
+                    ataTx.feePayer = solanaWallet.publicKey!;
+
+                    const ataSignature = await solanaWallet.sendTransaction(ataTx, solanaConnection);
+                    await solanaConnection.confirmTransaction(ataSignature, 'processed');
+                    console.log('[Claim] ATA Created successfully.');
+                }
+
+                const transaction = new anchor.web3.Transaction();
+
+                // Manually build instruction to avoid Anchor version mismatch IDL parsing errors
+                // The discriminator for `claim` from the IDL is [62, 198, 214, 193, 213, 159, 108, 210]
+                const CLAIM_DISCRIMINATOR = Buffer.from([62, 198, 214, 193, 213, 159, 108, 210]);
+                const data = Buffer.concat([CLAIM_DISCRIMINATOR, secretBuf]);
+
+                const ix = new anchor.web3.TransactionInstruction({
+                    programId: new PublicKey(SOLANA_PROGRAM_ID),
+                    keys: [
+                        { pubkey: solanaWallet.publicKey!, isSigner: true, isWritable: true },
+                        { pubkey: escrowPda, isSigner: false, isWritable: true },
+                        { pubkey: vaultPda, isSigner: false, isWritable: true },
+                        { pubkey: takerTokenAccount, isSigner: false, isWritable: true },
+                        { pubkey: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'), isSigner: false, isWritable: false }
+                    ],
+                    data
+                });
+
+                transaction.add(ix);
+
+                try {
+                    // Pre-flight simulation to catch exact errors (wallets often swallow RPC errors)
+                    // Wallets typically run their own simulation, so we just set up the transaction config
+                    transaction.recentBlockhash = (await solanaConnection.getLatestBlockhash()).blockhash;
+                    transaction.feePayer = solanaWallet.publicKey!;
+
+                    // Adjust step message depending on if ATA was just created
+                    setSwapStep(accountInfo ? 'Please sign the transaction in your wallet...' : 'Please sign the claim transaction (Transaction 2 of 2)...');
+
+                    // User signs and sends transaction
+                    const signature = await solanaWallet.sendTransaction(transaction, solanaConnection);
+                    claimTxid = signature;
+
+                    setSwapStep('Waiting for confirmation...');
+                    await solanaConnection.confirmTransaction(signature, 'processed');
+
+                    // Notify relayer so it completes the BCH claim side quickly
+                    try {
+                        await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {
+                            intentId: orderId,
+                            secret,
+                        });
+                    } catch { }
+
+                } catch (err: any) {
+                    console.error('Solana Transaction Error:', err);
+                    if (err.logs) console.error('Simulation Logs:', err.logs);
+                    throw new Error(`Transaction failed: ${err.message}`);
+                }
+
+            } else if (direction === 'SOL_TO_BCH' || direction === 'MOV_TO_BCH') {
                 // User claims on BCH (destination)
                 setSwapStep('Claiming on BCH...');
                 if (!bchWallet.connected || !order.claimData?.bchContractAddress) {
@@ -977,7 +1084,7 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                     throw new Error('Not a standard P2PKH address');
                 };
 
-                // In SOL_TO_BCH, the Relayer is the Maker (locks BCH) and User is the Taker (claims BCH)
+                // In SOL_TO_BCH and MOV_TO_BCH, the Relayer is the Maker (locks BCH) and User is the Taker (claims BCH)
                 let relayerSolAddress = '';
                 try {
                     const healthRes = await axios.get(`${BCH_SOLANA_RELAYER_URL}/health`);
@@ -1052,8 +1159,8 @@ export function BCHSwapProvider({ children }: { children: ReactNode }) {
                     });
                 } catch { }
 
-            } else if (direction === 'BCH_TO_MOV' || direction === 'MOV_TO_BCH') {
-                // Movement chain claims
+            } else if (direction === 'BCH_TO_MOV') {
+                // Movement chain claims (handled by Relayer API until Movement wallet integrated)
                 setSwapStep('Claiming on Movement...');
                 try {
                     const res = await axios.post(`${BCH_SOLANA_RELAYER_URL}/claim`, {

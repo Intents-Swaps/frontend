@@ -1,16 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BCHSwapCard } from '@/components/bch-swap/BCHSwapCard';
 import { LimitOrderHistory } from '@/components/bch-swap/LimitOrderHistory';
 import { BCHOrderType } from '@/types';
+import { useBCHSwapOptional } from '@/context/BCHSwapContext';
 // ============================================================================
 // BCH Swap Page — /bchswap
 // ============================================================================
 // Unified page for BCH same-chain (CashToken) and cross-chain (BCH↔Solana) swaps.
 // Layout mirrors the existing SwapPage pattern when 'market' is selected.
-// Expands to a two-column layout when 'limit' orders are selected.
+// Expands to a two-column layout when 'limit' orders are selected or after a swap.
 
 export default function BchSwapPage() {
     const [orderType, setOrderType] = useState<BCHOrderType>('market');
+    const [showOrders, setShowOrders] = useState(false);
+    const swapCtx = useBCHSwapOptional();
+    const prevPendingCount = useRef<number | null>(null); // null = not yet initialized
+    const swapCardRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Show orders panel ONLY when a NEW order is created (not from existing localStorage)
+    useEffect(() => {
+        const currentCount = (swapCtx?.pendingOrders?.length || 0) + (swapCtx?.completedOrders?.length || 0);
+        if (prevPendingCount.current === null) {
+            // First render — capture existing count, don't show panel
+            prevPendingCount.current = currentCount;
+            return;
+        }
+        if (currentCount > prevPendingCount.current) {
+            setShowOrders(true);
+        }
+        prevPendingCount.current = currentCount;
+    }, [swapCtx?.pendingOrders?.length, swapCtx?.completedOrders?.length]);
+
+    // Sync swap card height to CSS variable for orders panel
+    useEffect(() => {
+        const el = swapCardRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (containerRef.current) {
+                    containerRef.current.style.setProperty('--swap-card-height', `${h}px`);
+                }
+            }
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    const panelVisible = showOrders || orderType === 'limit';
 
     return (
         <div className="container mx-auto py-10">
@@ -21,17 +59,19 @@ export default function BchSwapPage() {
             </div>
 
             <div className="flex justify-center max-w-[1200px] mx-auto w-full transition-all duration-300">
-                <div className={`flex w-full gap-8 transition-all duration-500 justify-center 
-                    ${orderType === 'limit' ? 'lg:justify-start lg:gap-8 flex-col lg:flex-row' : 'max-w-[480px]'}`}
+                <div
+                    ref={containerRef}
+                    className={`flex w-full gap-8 transition-all duration-500 justify-center 
+                    ${panelVisible ? 'lg:justify-start lg:gap-8 flex-col lg:flex-row' : 'max-w-[480px]'}`}
                 >
                     {/* Swap Card */}
-                    <div className="w-full lg:w-[480px] shrink-0 transform transition-transform duration-300">
+                    <div ref={swapCardRef} className="w-full lg:w-[480px] shrink-0 transform transition-transform duration-300">
                         <BCHSwapCard orderType={orderType} onOrderTypeChange={setOrderType} />
                     </div>
 
-                    {/* Limit Order History Side Panel */}
-                    {orderType === 'limit' && (
-                        <div className="w-full lg:flex-1 hidden lg:block animate-in slide-in-from-right-8 fade-in-50 duration-500 fill-mode-both delay-100">
+                    {/* Orders Panel — slides in after swap or when limit mode is active */}
+                    {panelVisible && (
+                        <div className="w-full lg:flex-1 animate-in slide-in-from-right-8 fade-in-50 duration-500 fill-mode-both delay-100">
                             <LimitOrderHistory />
                         </div>
                     )}
@@ -40,3 +80,4 @@ export default function BchSwapPage() {
         </div>
     );
 }
+

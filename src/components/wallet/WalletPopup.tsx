@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Wallet, Bell, LogOut, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { X, Wallet, Bell, LogOut, RefreshCw, Eye, EyeOff, CheckCircle2, Clock, Loader2, XCircle, ArrowRight, ExternalLink } from 'lucide-react';
+import { useBCHSwapOptional } from '@/context/BCHSwapContext';
+import { BCHOrder } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PriceService } from '@/lib/pyth';
 import { PriceData } from '@/types';
@@ -20,6 +22,128 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 
 type TopTab = 'wallet' | 'notifications';
 type SubTab = 'tokens' | 'orders' | 'history' | 'addresses';
+
+// ============================================================================
+// Notifications Panel — Shows captured toast/notification events
+// ============================================================================
+
+const NOTIF_STORAGE_KEY = 'intent_notifications';
+
+export interface StoredNotification {
+    id: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+    message: string;
+    description?: string;
+    timestamp: number;
+}
+
+/** Call this alongside toast() to also store the notification for the wallet panel */
+export function pushNotification(type: StoredNotification['type'], message: string, description?: string) {
+    try {
+        const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
+        const list: StoredNotification[] = raw ? JSON.parse(raw) : [];
+        list.unshift({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            type,
+            message,
+            description,
+            timestamp: Date.now(),
+        });
+        // Keep last 50
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(list.slice(0, 50)));
+    } catch { /* non-fatal */ }
+}
+
+function getTimeAgo(ts: number): string {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+function NotificationsPanel() {
+    const [notifications, setNotifications] = useState<StoredNotification[]>([]);
+    const [, forceUpdate] = useState(0);
+
+    useEffect(() => {
+        const load = () => {
+            try {
+                const raw = localStorage.getItem(NOTIF_STORAGE_KEY);
+                setNotifications(raw ? JSON.parse(raw) : []);
+            } catch { setNotifications([]); }
+        };
+        load();
+        // Poll every 2s to catch new toasts
+        const interval = setInterval(load, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const clearAll = () => {
+        localStorage.removeItem(NOTIF_STORAGE_KEY);
+        setNotifications([]);
+    };
+
+    const typeConfig: Record<string, { icon: React.ReactNode; color: string }> = {
+        success: { icon: <CheckCircle2 className="h-4 w-4 text-emerald-400" />, color: 'border-emerald-500/30' },
+        error: { icon: <XCircle className="h-4 w-4 text-red-400" />, color: 'border-red-500/30' },
+        info: { icon: <Bell className="h-4 w-4 text-blue-400" />, color: 'border-blue-500/30' },
+        warning: { icon: <Clock className="h-4 w-4 text-yellow-400" />, color: 'border-yellow-500/30' },
+    };
+
+    if (notifications.length === 0) {
+        return (
+            <div className="flex-1 px-4 py-10 text-center">
+                <Bell className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground">No notifications yet</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    Toast events will appear here
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex-1 overflow-y-auto max-h-[400px] px-3 pb-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+            <div className="flex items-center justify-between px-1 py-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    {notifications.length} Notifications
+                </span>
+                <button
+                    onClick={clearAll}
+                    className="text-[10px] text-muted-foreground hover:text-red-400 transition-colors"
+                >
+                    Clear All
+                </button>
+            </div>
+            <div className="space-y-1.5">
+                {notifications.map(notif => {
+                    const cfg = typeConfig[notif.type] || typeConfig.info;
+                    return (
+                        <div
+                            key={notif.id}
+                            className={cn(
+                                "flex items-start gap-2.5 p-2.5 rounded-lg border-l-2 bg-white/[0.02] hover:bg-white/[0.04] transition-colors",
+                                cfg.color
+                            )}
+                        >
+                            <div className="mt-0.5 flex-shrink-0">{cfg.icon}</div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-xs font-medium text-foreground">{notif.message}</div>
+                                {notif.description && (
+                                    <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{notif.description}</div>
+                                )}
+                                <div className="text-[9px] text-muted-foreground/60 mt-0.5">
+                                    {getTimeAgo(notif.timestamp)}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
 
 interface WalletPopupProps {
     open: boolean;
@@ -230,13 +354,7 @@ export function WalletPopup({ open, onClose }: WalletPopupProps) {
                 </>
             ) : (
                 /* ─── Notifications Tab ─── */
-                <div className="flex-1 px-4 py-10 text-center">
-                    <Bell className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
-                    <p className="text-sm text-muted-foreground">No notifications</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
-                        Swap confirmations and alerts will appear here
-                    </p>
-                </div>
+                <NotificationsPanel />
             )}
         </div>
     );
