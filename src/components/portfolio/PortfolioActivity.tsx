@@ -1,22 +1,114 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, RefreshCw, Layers, Navigation } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, RefreshCw, Layers, Navigation, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/coingecko';
 import { ActivityService, ActivityRecord } from '@/lib/activity';
+import { BCHOrder } from '@/types';
+
+const BCH_ORDERS_KEY = 'bch_swap_orders';
+
+const TOKEN_ICONS: Record<string, string> = {
+    'BCH': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    'SOL': '/assets/solanaLogo.png',
+    'MOVE': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
+    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+};
+
+interface MergedActivity {
+    id: string;
+    type: 'send' | 'receive' | 'swap' | 'bridge';
+    title: string;
+    subtitle: string;
+    valueUsd: number;
+    timestamp: number;
+    explorerUrl?: string;
+    sellIcon?: string;
+    buyIcon?: string;
+}
+
+function getExplorerUrl(order: BCHOrder): string | undefined {
+    if (order.explorerUrl) return order.explorerUrl;
+    if (order.txid) {
+        if (order.swapType.includes('sol')) return `https://explorer.solana.com/tx/${order.txid}?cluster=devnet`;
+        if (order.swapType.includes('mov')) return `https://explorer.movementnetwork.xyz/txn/${order.txid}?network=testnet`;
+        return `https://chipnet.chaingraph.cash/tx/${order.txid}`;
+    }
+    if (order.contractAddress) return `https://chipnet.chaingraph.cash/address/${order.contractAddress}`;
+    return undefined;
+}
 
 export function PortfolioActivity() {
-    const [activities, setActivities] = useState<ActivityRecord[]>([]);
+    const [activities, setActivities] = useState<MergedActivity[]>([]);
 
     useEffect(() => {
-        const loadHistory = () => {
-            setActivities(ActivityService.getHistory());
+        const loadAll = () => {
+            const merged: MergedActivity[] = [];
+
+            // 1. ActivityService records (send/receive)
+            try {
+                const records = ActivityService.getHistory();
+                records.forEach(tx => {
+                    merged.push({
+                        id: tx.id,
+                        type: tx.type,
+                        title: tx.type === 'swap' ? `Swapped ${tx.assetIn} for ${tx.assetOut}` :
+                            tx.type === 'receive' ? `Received ${tx.asset}` :
+                                tx.type === 'send' ? `Sent ${tx.asset}` :
+                                    `Bridged ${tx.asset}`,
+                        subtitle: tx.type === 'swap' ? `${tx.amountIn} ${tx.assetIn} → ${tx.amountOut} ${tx.assetOut}` : `${tx.amount} ${tx.asset}`,
+                        valueUsd: tx.valueUsd,
+                        timestamp: tx.timestamp,
+                        explorerUrl: tx.explorerUrl,
+                    });
+                });
+            } catch { /* non-fatal */ }
+
+            // 2. BCH swap orders from localStorage
+            try {
+                const saved = localStorage.getItem(BCH_ORDERS_KEY);
+                if (saved) {
+                    const bchOrders: BCHOrder[] = JSON.parse(saved);
+                    bchOrders.forEach(order => {
+                        const sellSym = order.sellToken?.symbol || '?';
+                        const buySym = order.buyToken?.symbol || '?';
+                        const isCross = order.swapType !== 'same-chain';
+                        const mockUsdPrice = sellSym === 'BCH' ? 250 : sellSym === 'SOL' ? 150 : sellSym === 'MOVE' ? 0.8 : 1;
+                        const statusLabel = order.status === 'filled' || order.status === 'claimed' ? '✓' : order.status === 'pending' ? '⏳' : order.status === 'claimable' ? '🎯' : '';
+                        merged.push({
+                            id: `bch_${order.id}`,
+                            type: isCross ? 'bridge' : 'swap',
+                            title: `${statusLabel} Swapped ${sellSym} for ${buySym}`,
+                            subtitle: `${order.sellAmount} ${sellSym} → ${Number(order.buyAmount).toFixed(4)} ${buySym}`,
+                            valueUsd: order.sellAmount * mockUsdPrice,
+                            timestamp: order.createdAt,
+                            explorerUrl: getExplorerUrl(order),
+                            sellIcon: order.sellToken?.icon || TOKEN_ICONS[sellSym],
+                            buyIcon: order.buyToken?.icon || TOKEN_ICONS[buySym],
+                        });
+                    });
+                }
+            } catch { /* non-fatal */ }
+
+            // Sort by time desc and dedupe
+            const seen = new Set<string>();
+            const deduped = merged.filter(a => {
+                if (seen.has(a.id)) return false;
+                seen.add(a.id);
+                return true;
+            });
+            deduped.sort((a, b) => b.timestamp - a.timestamp);
+            setActivities(deduped);
         };
 
-        loadHistory();
-
-        // Listen for internal app updates
-        window.addEventListener('activity_history_updated', loadHistory);
-        return () => window.removeEventListener('activity_history_updated', loadHistory);
+        loadAll();
+        window.addEventListener('activity_history_updated', loadAll);
+        // Also poll every 5s for new BCH orders
+        const interval = setInterval(loadAll, 5000);
+        return () => {
+            window.removeEventListener('activity_history_updated', loadAll);
+            clearInterval(interval);
+        };
     }, []);
 
     const formatTime = (ts: number) => {
@@ -40,7 +132,7 @@ export function PortfolioActivity() {
         <div className="w-full">
             <div className="mb-4">
                 <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
-                <p className="text-sm text-muted-foreground mt-1">Your recent transactions</p>
+                <p className="text-sm text-muted-foreground mt-1">Swaps, sends, receives, and cross-chain bridges</p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -66,18 +158,20 @@ export function PortfolioActivity() {
                                 {tx.type === 'receive' && <ArrowDownLeft className="h-5 w-5" />}
                                 {tx.type === 'send' && <Navigation className="h-5 w-5 -rotate-90" />}
                                 {tx.type === 'swap' && <RefreshCw className="h-5 w-5" />}
-                                {tx.type === 'bridge' && <Layers className="h-5 w-5" />}
+                                {tx.type === 'bridge' && <Globe className="h-5 w-5" />}
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-medium text-foreground capitalize">
-                                    {tx.type === 'swap' ? `Swapped ${tx.assetIn} for ${tx.assetOut}` :
-                                        tx.type === 'receive' ? `Received ${tx.asset}` :
-                                            tx.type === 'send' ? `Sent ${tx.asset}` :
-                                                `Bridged ${tx.asset}`}
-                                </span>
-                                <span className="text-xs text-muted-foreground mt-0.5 font-mono">
-                                    {tx.type === 'swap' ? `${tx.amountIn} ${tx.assetIn} → ${tx.amountOut} ${tx.assetOut}` : `${tx.amount} ${tx.asset}`}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    {/* Token icons for swaps */}
+                                    {(tx.type === 'swap' || tx.type === 'bridge') && (tx.sellIcon || tx.buyIcon) && (
+                                        <div className="flex -space-x-1.5 mr-1">
+                                            {tx.sellIcon && <img src={tx.sellIcon} className="w-4 h-4 rounded-full border border-zinc-800" />}
+                                            {tx.buyIcon && <img src={tx.buyIcon} className="w-4 h-4 rounded-full border border-zinc-800" />}
+                                        </div>
+                                    )}
+                                    <span className="font-medium text-foreground">{tx.title}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground mt-0.5 font-mono">{tx.subtitle}</span>
                             </div>
                         </div>
 

@@ -10,21 +10,22 @@ import axios from 'axios';
 import { TOKENS } from '@/components/intent-swap/forms/TokenSelector';
 import { ALL_BCH_SWAP_TOKENS } from '@/components/bch-swap/BCHTokenSelector';
 import { useSwap } from '@/context/SwapContext';
-import { ArrowRight, ExternalLink, RefreshCw, Layers, Zap, Globe, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowRight, ExternalLink, RefreshCw, Layers, Zap, Globe, Clock, CheckCircle2, XCircle, BoxSelect } from 'lucide-react';
 import { shortenAddr } from '@/lib/utils';
+import { BCHOrder } from '@/types';
 
 // ============================================================================
 // Types & Normalization
 // ============================================================================
 
 type UnifiedOrderStatus = 'PENDING' | 'LOCKED' | 'DEST_FILLED' | 'CLAIMABLE' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
-type OrderCategory = 'ALL' | 'SAME_CHAIN' | 'CROSS_CHAIN';
+type OrderCategory = 'ALL' | 'SAME_CHAIN' | 'CROSS_CHAIN' | 'LOCAL';
 
 interface UnifiedOrder {
     id: string;
-    source: 'CASHTOKEN' | 'CROSSCHAIN';
-    swapType: string;         // 'same-chain', 'bch-to-sol', 'mov-to-bch', etc
-    orderType: string;        // 'limit', 'market'
+    source: 'CASHTOKEN' | 'CROSSCHAIN' | 'LOCAL';
+    swapType: string;
+    orderType: string;
     status: UnifiedOrderStatus;
 
     makerAddress: string;
@@ -46,22 +47,29 @@ interface UnifiedOrder {
     sourceExplorerUrl?: string;
     destExplorerUrl?: string;
 
-    rawIntent: any; // Keep original for debugging/expansion
+    rawIntent: any;
 }
 
+// ============================================================================
+// Chain & Token icon constants
+// ============================================================================
+const CHAIN_ICONS: Record<string, string> = {
+    bch: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    solana: '/assets/solanaLogo.png',
+    movement: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
+};
+
+const BCH_ORDERS_KEY = 'bch_swap_orders';
+
 export function MonitorPage() {
-    // Relayer contexts
     const { relayerUrl: cashtokenRelayerUrl } = useSwap();
-    // Use environment variable for cross-chain relayer host
     const crossChainRelayerUrl = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || 'https://cross-chain-relayer-production-a93e.up.railway.app';
 
-    // State
     const [orders, setOrders] = useState<UnifiedOrder[]>([]);
     const [health, setHealth] = useState<{ cashtoken?: any; crosschain?: any }>({});
     const [isLoading, setIsLoading] = useState(false);
     const [, setLastUpdated] = useState<Date>(new Date());
 
-    // Filters
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'HISTORY'>('ACTIVE');
     const [categoryFilter, setCategoryFilter] = useState<OrderCategory>('ALL');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -84,7 +92,7 @@ export function MonitorPage() {
                 crosschain: healthCC.status === 'fulfilled' ? healthCC.value.data : null
             });
 
-            // 2. Fetch Orders
+            // 2. Fetch Orders from relayers
             const [intentsCT, ordersCC] = await Promise.allSettled([
                 axios.get(`${cashtokenRelayerUrl}/intents`),
                 axios.get(`${crossChainRelayerUrl}/orders`)
@@ -96,7 +104,6 @@ export function MonitorPage() {
             if (intentsCT.status === 'fulfilled' && intentsCT.value.data) {
                 const { active = [], completed = [] } = intentsCT.value.data;
                 const processCashToken = (intent: any, isCompleted: boolean): UnifiedOrder => {
-                    // Try to resolve exactly from TOKENS or ALL_BCH_SWAP_TOKENS
                     const sToken = findTokenInRegistries(intent.sell_token_type) || { symbol: 'UNK', decimals: 8, icon: '' };
                     const bToken = findTokenInRegistries(intent.buy_token_type) || { symbol: 'UNK', decimals: 8, icon: '' };
 
@@ -117,7 +124,7 @@ export function MonitorPage() {
                         sellAmountFormatted: formatTokenAmount(intent.sell_amount, sToken.decimals),
                         buyAmountFormatted: formatTokenAmount(intent.buy_amount || intent.start_buy_amount, bToken.decimals),
                         createdAt: intent.timestamp,
-                        updatedAt: intent.timestamp, // Cashtoken relayer doesn't update intents often
+                        updatedAt: intent.timestamp,
                         expiryTime: intent.end_time ? intent.end_time * 1000 : undefined,
                         sourceTxId: intent.hash,
                         sourceExplorerUrl: intent.hash ? `https://chipnet.chaingraph.cash/tx/${intent.hash}` : undefined,
@@ -132,31 +139,32 @@ export function MonitorPage() {
                 ];
             }
 
-            // Process CrossChain Orders
+            // Process CrossChain Orders from relayer
             if (ordersCC.status === 'fulfilled' && ordersCC.value.data) {
                 const { active = [], completed = [] } = ordersCC.value.data;
-                const processCrossChain = (intent: any): UnifiedOrder => {
+                const processCrossChain = (intent: any, isCompleted: boolean = false): UnifiedOrder => {
                     const sToken = resolveCrossChainToken(intent.direction, 'SELL');
                     const bToken = resolveCrossChainToken(intent.direction, 'BUY');
 
-                    // Map specific CC statuses
                     let status: UnifiedOrderStatus = 'PENDING';
-                    if (intent.status === 'SOURCE_LOCKED') status = 'LOCKED';
+                    if (isCompleted) {
+                        status = 'COMPLETED';
+                    } else if (intent.status === 'SOURCE_LOCKED') status = 'LOCKED';
                     else if (intent.status === 'DEST_FILLED') status = 'DEST_FILLED';
                     else if (intent.status === 'DEST_CLAIMED') status = 'CLAIMABLE';
                     else if (intent.status === 'COMPLETED') status = 'COMPLETED';
 
-                    if (intent.status !== 'COMPLETED' && intent.sourceTimelock && (Date.now() / 1000) > intent.sourceTimelock) {
-                        status = 'EXPIRED'; // Simplistic timeout
+                    if (status !== 'COMPLETED' && intent.sourceTimelock && (Date.now() / 1000) > intent.sourceTimelock) {
+                        status = 'EXPIRED';
                     }
 
                     return {
                         id: intent.id,
                         source: 'CROSSCHAIN',
-                        swapType: intent.direction.toLowerCase().replace(/_/g, '-'),
-                        orderType: 'limit', // CC is implicitly limit
+                        swapType: intent.direction?.toLowerCase().replace(/_/g, '-') || 'cross-chain',
+                        orderType: 'limit',
                         status,
-                        makerAddress: intent.makerAddress,
+                        makerAddress: intent.makerAddress || 'Unknown',
                         recipientAddress: intent.recipientAddress,
                         sellToken: sToken,
                         buyToken: bToken,
@@ -164,25 +172,69 @@ export function MonitorPage() {
                         buyAmountRaw: intent.buyAmount,
                         sellAmountFormatted: formatTokenAmount(intent.sellAmount, sToken?.decimals || 8),
                         buyAmountFormatted: formatTokenAmount(intent.buyAmount, bToken?.decimals || 8),
-                        createdAt: intent.createdAt * 1000,
-                        updatedAt: intent.updatedAt * 1000,
+                        createdAt: intent.createdAt ? intent.createdAt * 1000 : Date.now(),
+                        updatedAt: intent.updatedAt ? intent.updatedAt * 1000 : Date.now(),
                         expiryTime: intent.sourceTimelock ? intent.sourceTimelock * 1000 : undefined,
                         sourceTxId: intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId,
                         destTxId: intent.destFillTx || intent.destClaimTx,
-                        sourceExplorerUrl: buildExplorerUrl(intent.direction, 'SOURCE', intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId),
-                        destExplorerUrl: buildExplorerUrl(intent.direction, 'DEST', intent.destFillTx || intent.destClaimTx),
+                        sourceExplorerUrl: buildExplorerUrl(intent.direction, 'SOURCE', intent),
+                        destExplorerUrl: buildExplorerUrl(intent.direction, 'DEST', intent),
                         rawIntent: intent
                     };
                 };
 
                 unified = [
                     ...unified,
-                    ...active.map(processCrossChain),
-                    ...completed.map(processCrossChain)
+                    ...active.map((i: any) => processCrossChain(i, false)),
+                    ...completed.map((i: any) => processCrossChain(i, true))
                 ];
             }
 
-            // Sort by latest
+            // 3. Pull local BCH orders from localStorage
+            try {
+                const saved = localStorage.getItem(BCH_ORDERS_KEY);
+                if (saved) {
+                    const bchOrders: BCHOrder[] = JSON.parse(saved);
+                    const localOrders = bchOrders.map((order): UnifiedOrder => {
+                        let status: UnifiedOrderStatus = 'PENDING';
+                        if (order.status === 'filled' || order.status === 'claimed') status = 'COMPLETED';
+                        else if (order.status === 'claimable') status = 'CLAIMABLE';
+                        else if (order.status === 'cancelled') status = 'FAILED';
+                        else if (order.status === 'expired') status = 'EXPIRED';
+
+                        const sourceChain = getSourceChain(order.swapType);
+                        const destChain = getDestChain(order.swapType);
+
+                        return {
+                            id: `local_${order.id}`,
+                            source: 'LOCAL',
+                            swapType: order.swapType,
+                            orderType: order.orderType || 'market',
+                            status,
+                            makerAddress: order.contractAddress || 'Local Wallet',
+                            sellToken: order.sellToken || { symbol: '?', decimals: 8, icon: '' },
+                            buyToken: order.buyToken || { symbol: '?', decimals: 8, icon: '' },
+                            sellAmountRaw: String(order.sellAmount),
+                            buyAmountRaw: String(order.buyAmount),
+                            sellAmountFormatted: String(order.sellAmount),
+                            buyAmountFormatted: Number(order.buyAmount).toFixed(4),
+                            createdAt: order.createdAt,
+                            updatedAt: order.createdAt,
+                            sourceTxId: order.txid,
+                            destTxId: order.fillTxid,
+                            sourceExplorerUrl: buildLocalExplorerUrl(order, 'source'),
+                            destExplorerUrl: buildLocalExplorerUrl(order, 'dest'),
+                            rawIntent: order,
+                        };
+                    });
+
+                    // Deduplicate — skip local if relayer already has the same intent
+                    const existingIds = new Set(unified.map(o => o.rawIntent?.id));
+                    const uniqueLocal = localOrders.filter(lo => !existingIds.has(lo.rawIntent?.intentId));
+                    unified = [...unified, ...uniqueLocal];
+                }
+            } catch { /* non-fatal */ }
+
             unified.sort((a, b) => b.createdAt - a.createdAt);
             setOrders(unified);
             setLastUpdated(new Date());
@@ -220,15 +272,20 @@ export function MonitorPage() {
     };
 
     const resolveCrossChainToken = (direction: string, side: 'SELL' | 'BUY') => {
+        if (!direction) return { symbol: 'UNK', decimals: 8, icon: '' };
+
         const isBchSell = direction.startsWith('BCH_');
+        const isSolSell = direction.startsWith('SOL_');
+        const isMovSell = direction.startsWith('MOV_');
+
         if (side === 'SELL') {
-            if (isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH');
-            if (direction.includes('SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL');
-            if (direction.includes('MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE');
+            if (isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH') || { symbol: 'BCH', decimals: 8, icon: CHAIN_ICONS.bch };
+            if (isSolSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL') || { symbol: 'SOL', decimals: 9, icon: CHAIN_ICONS.solana };
+            if (isMovSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE') || { symbol: 'MOVE', decimals: 8, icon: CHAIN_ICONS.movement };
         } else {
-            if (!isBchSell) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH');
-            if (direction.includes('SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL');
-            if (direction.includes('MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE');
+            if (direction.endsWith('_BCH')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'BCH') || { symbol: 'BCH', decimals: 8, icon: CHAIN_ICONS.bch };
+            if (direction.endsWith('_SOL')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'SOL') || { symbol: 'SOL', decimals: 9, icon: CHAIN_ICONS.solana };
+            if (direction.endsWith('_MOV')) return ALL_BCH_SWAP_TOKENS.find(t => t.symbol === 'MOVE') || { symbol: 'MOVE', decimals: 8, icon: CHAIN_ICONS.movement };
         }
         return { symbol: 'UNK', decimals: 8, icon: '' };
     };
@@ -238,20 +295,70 @@ export function MonitorPage() {
     const formatTokenAmount = (raw: string | number, decimals: number = 8) => {
         if (!raw) return '0.00';
         const val = Number(raw) / Math.pow(10, decimals);
+        if (isNaN(val)) return '0.00';
         return val.toLocaleString(undefined, { maximumFractionDigits: val < 0.01 ? 6 : 4 });
     };
 
-    const buildExplorerUrl = (direction: string, leg: 'SOURCE' | 'DEST', identifier: string) => {
-        if (!identifier) return undefined;
-        // Simplistic router based on chain direction
-        const isBch = (leg === 'SOURCE' && direction.startsWith('BCH_')) || (leg === 'DEST' && direction.endsWith('_BCH'));
-        const isSol = (leg === 'SOURCE' && direction.startsWith('SOL_')) || (leg === 'DEST' && direction.endsWith('_SOL'));
-        const isMov = (leg === 'SOURCE' && direction.startsWith('MOV_')) || (leg === 'DEST' && direction.endsWith('_MOV'));
+    const getSourceChain = (swapType: string): string => {
+        if (swapType.startsWith('bch')) return 'bch';
+        if (swapType.startsWith('sol')) return 'solana';
+        if (swapType.startsWith('mov')) return 'movement';
+        return 'bch';
+    };
 
-        if (isBch) return `https://chipnet.chaingraph.cash/tx/${identifier}`; // Using tx as fallback
-        if (isSol) return `https://explorer.solana.com/tx/${identifier}?cluster=devnet`;
-        if (isMov) return `https://explorer.movementnetwork.xyz/txn/${identifier}?network=testnet`;
+    const getDestChain = (swapType: string): string => {
+        if (swapType.endsWith('bch') || swapType === 'same-chain') return 'bch';
+        if (swapType.endsWith('sol')) return 'solana';
+        if (swapType.endsWith('mov')) return 'movement';
+        return 'bch';
+    };
+
+    const buildExplorerUrl = (direction: string, leg: 'SOURCE' | 'DEST', intent: any): string | undefined => {
+        if (!direction) return undefined;
+
+        if (leg === 'SOURCE') {
+            const id = intent.bchContractAddress || intent.solanaEscrowPda || intent.movementEscrowId;
+            if (!id) return undefined;
+
+            if (direction.startsWith('BCH_')) {
+                // BCH contract addresses need /address/ not /tx/
+                return id.startsWith('bchtest:') || id.startsWith('bitcoincash:')
+                    ? `https://chipnet.chaingraph.cash/address/${id}`
+                    : `https://chipnet.chaingraph.cash/tx/${id}`;
+            }
+            if (direction.startsWith('SOL_')) return `https://explorer.solana.com/tx/${id}?cluster=devnet`;
+            if (direction.startsWith('MOV_')) return `https://explorer.movementnetwork.xyz/txn/${id}?network=testnet`;
+        } else {
+            const id = intent.destFillTx || intent.destClaimTx;
+            if (!id) return undefined;
+
+            if (direction.endsWith('_BCH')) {
+                return id.startsWith('bchtest:') || id.startsWith('bitcoincash:')
+                    ? `https://chipnet.chaingraph.cash/address/${id}`
+                    : `https://chipnet.chaingraph.cash/tx/${id}`;
+            }
+            if (direction.endsWith('_SOL')) return `https://explorer.solana.com/tx/${id}?cluster=devnet`;
+            if (direction.endsWith('_MOV')) return `https://explorer.movementnetwork.xyz/txn/${id}?network=testnet`;
+        }
         return undefined;
+    };
+
+    const buildLocalExplorerUrl = (order: BCHOrder, leg: 'source' | 'dest'): string | undefined => {
+        if (leg === 'source') {
+            if (order.explorerUrl) return order.explorerUrl;
+            if (order.contractAddress) return `https://chipnet.chaingraph.cash/address/${order.contractAddress}`;
+            if (order.txid) return `https://chipnet.chaingraph.cash/tx/${order.txid}`;
+            return undefined;
+        } else {
+            if (order.destExplorerUrl) return order.destExplorerUrl;
+            if (!order.fillTxid) return undefined;
+
+            if (order.swapType === 'bch-to-sol') return `https://explorer.solana.com/tx/${order.fillTxid}?cluster=devnet`;
+            if (order.swapType === 'bch-to-mov') return `https://explorer.movementnetwork.xyz/txn/${order.fillTxid}?network=testnet`;
+            if (order.swapType === 'sol-to-bch') return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
+            if (order.swapType === 'mov-to-bch') return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
+            return `https://chipnet.chaingraph.cash/tx/${order.fillTxid}`;
+        }
     };
 
     // ============================================================================
@@ -259,15 +366,13 @@ export function MonitorPage() {
     // ============================================================================
 
     const filteredOrders = orders.filter(order => {
-        // Tab Filter
         if (activeTab === 'ACTIVE' && (order.status === 'COMPLETED' || order.status === 'FAILED' || order.status === 'EXPIRED')) return false;
         if (activeTab === 'HISTORY' && (order.status !== 'COMPLETED' && order.status !== 'FAILED' && order.status !== 'EXPIRED')) return false;
 
-        // Category Filter
         if (categoryFilter === 'SAME_CHAIN' && order.source !== 'CASHTOKEN') return false;
         if (categoryFilter === 'CROSS_CHAIN' && order.source !== 'CROSSCHAIN') return false;
+        if (categoryFilter === 'LOCAL' && order.source !== 'LOCAL') return false;
 
-        // Status Filter
         if (statusFilter !== 'ALL' && order.status !== statusFilter) return false;
 
         return true;
@@ -278,6 +383,29 @@ export function MonitorPage() {
     // ============================================================================
 
     const renderTypeBadge = (order: UnifiedOrder) => {
+        if (order.source === 'LOCAL') {
+            const swapLabels: Record<string, string> = {
+                'same-chain': 'CashToken',
+                'bch-to-sol': 'BCH → SOL',
+                'sol-to-bch': 'SOL → BCH',
+                'bch-to-mov': 'BCH → MOVE',
+                'mov-to-bch': 'MOVE → BCH',
+            };
+            const label = swapLabels[order.swapType] || order.swapType;
+            const isCross = order.swapType !== 'same-chain';
+            return (
+                <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className={`text-[10px] py-0 ${isCross ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'}`}>
+                        {isCross ? <Globe className="h-3 w-3 mr-1" /> : <Zap className="h-3 w-3 mr-1" />}
+                        {label}
+                    </Badge>
+                    <Badge variant="outline" className="bg-teal-500/10 text-teal-400 border-teal-500/20 text-[10px] py-0">
+                        Local
+                    </Badge>
+                </div>
+            );
+        }
+
         if (order.source === 'CASHTOKEN') {
             return (
                 <div className="flex items-center gap-1.5">
@@ -300,10 +428,10 @@ export function MonitorPage() {
                 <div className="flex items-center gap-1.5">
                     <Badge variant="outline" className={`${color} text-[10px] py-0`}>
                         <Globe className="h-3 w-3 mr-1" />
-                        {label.replace('-', ' → ')}
+                        {label.replace(/-/g, ' → ')}
                     </Badge>
                     <Badge variant="outline" className="bg-zinc-800 text-zinc-300 border-zinc-700 text-[10px] py-0">
-                        Limit
+                        HTLC
                     </Badge>
                 </div>
             );
@@ -323,6 +451,27 @@ export function MonitorPage() {
         }
     };
 
+    const getChainIcon = (swapType: string, leg: 'source' | 'dest'): string | null => {
+        const st = swapType.toLowerCase();
+        if (leg === 'source') {
+            if (st.startsWith('bch') || st === 'same-chain') return CHAIN_ICONS.bch;
+            if (st.startsWith('sol')) return CHAIN_ICONS.solana;
+            if (st.startsWith('mov')) return CHAIN_ICONS.movement;
+        } else {
+            if (st.endsWith('bch') || st === 'same-chain') return CHAIN_ICONS.bch;
+            if (st.endsWith('sol')) return CHAIN_ICONS.solana;
+            if (st.endsWith('mov')) return CHAIN_ICONS.movement;
+        }
+        return null;
+    };
+
+    const safePrice = (buyFormatted: string, sellFormatted: string): string => {
+        const b = parseFloat(buyFormatted.replace(/,/g, ''));
+        const s = parseFloat(sellFormatted.replace(/,/g, ''));
+        if (!s || isNaN(b) || isNaN(s)) return '—';
+        return (b / s).toFixed(4);
+    };
+
     return (
         <div className="w-full space-y-6">
 
@@ -338,7 +487,6 @@ export function MonitorPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* CashToken Health */}
                     <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-mono">
                         <span className="text-zinc-500 uppercase">CashTokens</span>
                         {health.cashtoken ? (
@@ -347,7 +495,6 @@ export function MonitorPage() {
                             <span className="flex items-center gap-1.5 text-red-500"><div className="w-2 h-2 rounded-full bg-red-500" /> OFFLINE</span>
                         )}
                     </div>
-                    {/* Cross-Chain Health */}
                     <div className="flex items-center gap-2 bg-zinc-900/50 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-mono">
                         <span className="text-zinc-500 uppercase">Cross-Chain</span>
                         {health.crosschain ? (
@@ -376,18 +523,19 @@ export function MonitorPage() {
 
                         <div className="flex items-center gap-3">
                             <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as any)}>
-                                <SelectTrigger className="w-[140px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
+                                <SelectTrigger className="w-[150px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
                                     <SelectValue placeholder="Network" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800">
-                                    <SelectItem value="ALL">All Networks</SelectItem>
+                                    <SelectItem value="ALL">All Sources</SelectItem>
                                     <SelectItem value="SAME_CHAIN">Same-Chain (BCH)</SelectItem>
                                     <SelectItem value="CROSS_CHAIN">Cross-Chain (HTLC)</SelectItem>
+                                    <SelectItem value="LOCAL">My Orders (Local)</SelectItem>
                                 </SelectContent>
                             </Select>
 
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[140px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
+                                <SelectTrigger className="w-[150px] h-9 bg-zinc-900/80 border-zinc-800 text-xs text-muted-foreground focus:ring-0">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-zinc-900 border-zinc-800">
@@ -395,6 +543,7 @@ export function MonitorPage() {
                                     <SelectItem value="PENDING">Pending</SelectItem>
                                     <SelectItem value="LOCKED">Locked</SelectItem>
                                     <SelectItem value="DEST_FILLED">Dest Filled</SelectItem>
+                                    <SelectItem value="CLAIMABLE">Claimable</SelectItem>
                                     <SelectItem value="COMPLETED">Completed</SelectItem>
                                     <SelectItem value="FAILED">Failed</SelectItem>
                                     <SelectItem value="EXPIRED">Expired</SelectItem>
@@ -409,9 +558,9 @@ export function MonitorPage() {
                             <TableHeader className="bg-zinc-900/30">
                                 <TableRow className="border-white/5 hover:bg-transparent">
                                     <TableHead className="w-[160px] text-xs font-semibold text-zinc-400">Created At</TableHead>
-                                    <TableHead className="text-xs font-semibold text-zinc-400">Trade Configuration</TableHead>
-                                    <TableHead className="text-xs font-semibold text-zinc-400">Prices & Routing</TableHead>
-                                    <TableHead className="text-xs font-semibold text-zinc-400">Status & Timeout</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-400">Trade</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-400">Details</TableHead>
+                                    <TableHead className="text-xs font-semibold text-zinc-400">Status</TableHead>
                                     <TableHead className="text-right text-xs font-semibold text-zinc-400">Explorers</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -419,7 +568,10 @@ export function MonitorPage() {
                                 {filteredOrders.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                                            {isLoading ? 'Loading intent networks...' : 'No orders found matching criteria.'}
+                                            <div className="flex flex-col items-center gap-2">
+                                                <BoxSelect className="h-10 w-10 text-zinc-700" strokeWidth={0.5} />
+                                                {isLoading ? 'Loading intent networks...' : 'No orders found matching criteria.'}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -427,6 +579,8 @@ export function MonitorPage() {
                                         const now = Date.now();
                                         const isExpired = order.expiryTime && now > order.expiryTime;
                                         const isCompleted = order.status === 'COMPLETED' || order.status === 'FAILED';
+                                        const sourceChainIcon = getChainIcon(order.swapType, 'source');
+                                        const destChainIcon = getChainIcon(order.swapType, 'dest');
 
                                         return (
                                             <TableRow key={order.id} className="border-white/5 hover:bg-white/[0.02] transition-colors group">
@@ -442,31 +596,47 @@ export function MonitorPage() {
                                                     </div>
                                                 </TableCell>
 
-                                                {/* CONFIGURATION */}
+                                                {/* TRADE CONFIG */}
                                                 <TableCell className="align-top py-4">
                                                     <div className="flex flex-col gap-2">
                                                         {renderTypeBadge(order)}
-                                                        <div className="flex items-center gap-1.5 bg-zinc-900/50 w-fit px-2 py-1 rounded-md border border-zinc-800">
-                                                            <div className="flex items-center gap-1.5">
-                                                                {order.sellToken?.icon ? <img src={order.sellToken.icon} className="w-4 h-4 rounded-full" /> : <div className="w-4 h-4 rounded-full bg-zinc-800" />}
-                                                                <span className="text-xs font-medium text-zinc-300">{order.sellAmountFormatted} {order.sellToken?.symbol}</span>
+                                                        <div className="flex items-center gap-1.5 bg-zinc-900/50 w-fit px-2.5 py-1.5 rounded-md border border-zinc-800">
+                                                            {/* Sell token with chain badge */}
+                                                            <div className="relative flex-shrink-0">
+                                                                <div className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
+                                                                    {order.sellToken?.icon ? <img src={order.sellToken.icon} className="w-4 h-4 object-contain" /> : <span className="text-[7px] text-zinc-500">{order.sellToken?.symbol?.[0]}</span>}
+                                                                </div>
+                                                                {sourceChainIcon && (
+                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-zinc-950 border border-zinc-700 flex items-center justify-center overflow-hidden">
+                                                                        <img src={sourceChainIcon} className="w-2 h-2 object-contain" />
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                            <ArrowRight className="w-3 h-3 text-zinc-600" />
-                                                            <div className="flex items-center gap-1.5">
-                                                                {order.buyToken?.icon ? <img src={order.buyToken.icon} className="w-4 h-4 rounded-full" /> : <div className="w-4 h-4 rounded-full bg-zinc-800" />}
-                                                                <span className="text-xs font-medium text-zinc-300">{order.buyAmountFormatted} {order.buyToken?.symbol}</span>
+                                                            <span className="text-xs font-medium text-zinc-300">{order.sellAmountFormatted} {order.sellToken?.symbol}</span>
+                                                            <ArrowRight className="w-3 h-3 text-zinc-600 mx-0.5" />
+                                                            {/* Buy token with chain badge */}
+                                                            <div className="relative flex-shrink-0">
+                                                                <div className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden">
+                                                                    {order.buyToken?.icon ? <img src={order.buyToken.icon} className="w-4 h-4 object-contain" /> : <span className="text-[7px] text-zinc-500">{order.buyToken?.symbol?.[0]}</span>}
+                                                                </div>
+                                                                {destChainIcon && (
+                                                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-zinc-950 border border-zinc-700 flex items-center justify-center overflow-hidden">
+                                                                        <img src={destChainIcon} className="w-2 h-2 object-contain" />
+                                                                    </div>
+                                                                )}
                                                             </div>
+                                                            <span className="text-xs font-medium text-zinc-300">{order.buyAmountFormatted} {order.buyToken?.symbol}</span>
                                                         </div>
                                                     </div>
                                                 </TableCell>
 
-                                                {/* PRICING & ROUTING */}
+                                                {/* DETAILS */}
                                                 <TableCell className="align-top py-4">
                                                     <div className="flex flex-col gap-1.5">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs text-zinc-500 w-12">Price:</span>
                                                             <span className="text-xs font-mono text-emerald-400">
-                                                                {(Number(order.buyAmountFormatted) / Number(order.sellAmountFormatted)).toFixed(4)} {order.buyToken?.symbol}/{order.sellToken?.symbol}
+                                                                {safePrice(order.buyAmountFormatted, order.sellAmountFormatted)} {order.buyToken?.symbol}/{order.sellToken?.symbol}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-baseline gap-2">
@@ -478,7 +648,7 @@ export function MonitorPage() {
                                                     </div>
                                                 </TableCell>
 
-                                                {/* STATUS & TIMEOUTS */}
+                                                {/* STATUS */}
                                                 <TableCell className="align-top py-4">
                                                     <div className="flex flex-col gap-2 items-start">
                                                         {renderStatusBadge(order.status)}
@@ -503,7 +673,7 @@ export function MonitorPage() {
                                                             <span className="text-xs text-zinc-700 font-mono px-2 py-1">No Source Tx</span>
                                                         )}
 
-                                                        {order.source === 'CROSSCHAIN' && (
+                                                        {order.source !== 'CASHTOKEN' && (
                                                             order.destExplorerUrl ? (
                                                                 <a href={order.destExplorerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 bg-purple-500/5 px-2 py-1 rounded-md transition-colors border border-transparent hover:border-purple-500/20">
                                                                     <span className="font-mono">Dest Tx</span>
@@ -527,4 +697,3 @@ export function MonitorPage() {
         </div>
     );
 }
-

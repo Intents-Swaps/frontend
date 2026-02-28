@@ -15,6 +15,7 @@ import CrossOrders from "./pages/CrossOrders"
 import PortfolioPage from './pages/PortfolioPage';
 import ProPage from "./pages/ProPage"
 import { MonitorPage } from "./pages/MonitorPage"
+import { SolverPage } from "./pages/SolverPage"
 
 import TermsOfService from '@/pages/TermsOfService';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
@@ -89,6 +90,15 @@ function App() {
                                                 <Header />
                                                 <main className="flex-1 container mx-auto p-4 md:p-8 mt-20 max-w-[1400px]">
                                                     <MonitorPage />
+                                                </main>
+                                            </div>
+                                        } />
+                                        {/* Solver page — hidden from menu */}
+                                        <Route path="/solver" element={
+                                            <div className="flex flex-col min-h-screen">
+                                                <Header />
+                                                <main className="flex-1 container mx-auto p-4 md:p-8 mt-20 max-w-[1400px]">
+                                                    <SolverPage />
                                                 </main>
                                             </div>
                                         } />
