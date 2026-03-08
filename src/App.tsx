@@ -25,6 +25,8 @@ import { KBArticlePage } from "./pages/KBArticlePage"
 import { KBSearchPage } from "./pages/KBSearchPage"
 import { AddTokenPage } from "./pages/AddTokenPage"
 import { ExplorePage } from "./pages/ExplorePage"
+import EcosystemPage from "./pages/EcosystemPage"
+import IntegratePage from "./pages/IntegratePage"
 import { SolanaWalletProvider } from "./context/SolanaWalletProvider"
 import { BCHWalletProvider, CashonizeProvider } from "./context/BCHWalletProvider"
 import { BCHSwapProvider } from "./context/BCHSwapContext"
@@ -69,6 +71,8 @@ function App() {
                                                 </main>
                                             </div>
                                         } />
+                                        <Route path="/ecosystem" element={<EcosystemPage />} />
+                                        <Route path="/integrate" element={<IntegratePage />} />
                                         <Route path="/portfolio" element={
                                             <div className="flex flex-col min-h-screen">
                                                 <Header />

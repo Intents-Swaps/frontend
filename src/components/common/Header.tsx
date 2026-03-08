@@ -36,6 +36,8 @@ export function Header() {
     ];
 
     const dropdownItems = [
+        { name: 'Ecosystem', path: '/ecosystem' },
+        { name: 'Integrate', path: '/integrate' },
         { name: 'Oracle', path: '/oracle' },
         { name: 'Knowledge Base', path: '/kb' },
     ];
