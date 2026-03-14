@@ -53,14 +53,14 @@ export default function EcosystemPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: 0.1 }}
-                                className="lg:col-span-2 relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors"
+                                className="relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors flex flex-col"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative z-10 h-full flex flex-col">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6">
-                                        <ArrowLeftRight className="w-6 h-6 text-black" />
+                                <div className="relative z-10 h-full flex flex-col items-center text-center">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mb-6">
+                                        <ArrowLeftRight className="w-8 h-8 text-black" />
                                     </div>
-                                    <h3 className="text-3xl font-bold mb-4">BCH Intents Swap</h3>
+                                    <h3 className="text-2xl font-bold mb-4">BCH Intents Swap</h3>
                                     <p className="text-muted-foreground text-lg mb-8 flex-1">
                                         Our flagship product. Trustless intent-based swaps combining CashTokens and cross-chain execution without bridges or wrapping.
                                     </p>
@@ -80,12 +80,12 @@ export default function EcosystemPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: 0.2 }}
-                                className="relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors"
+                                className="relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors flex flex-col"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                <div className="relative z-10 h-full flex flex-col">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-6">
-                                        <MessageCircle className="w-6 h-6 text-white" />
+                                <div className="relative z-10 h-full flex flex-col items-center text-center">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-6">
+                                        <MessageCircle className="w-8 h-8 text-white" />
                                     </div>
                                     <h3 className="text-2xl font-bold mb-4">Telegram Bot</h3>
                                     <p className="text-muted-foreground mb-8 flex-1">
@@ -107,46 +107,23 @@ export default function EcosystemPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: 0.3 }}
-                                className="lg:col-span-3 relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors"
+                                className="relative group rounded-3xl overflow-hidden border border-white/10 bg-black/40 p-8 hover:bg-black/60 transition-colors flex flex-col"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                                <div className="flex flex-col md:flex-row gap-8 relative z-10 items-center">
-                                    <div className="flex-1">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-6">
-                                            <Globe className="w-6 h-6 text-white" />
-                                        </div>
-                                        <h3 className="text-3xl font-bold mb-4">BCH Intents Explorer</h3>
-                                        <p className="text-muted-foreground text-lg mb-8 max-w-xl">
-                                            Transparently verify cross-chain state. Track intents, solver competition, and atomic HTLC settlements in real-time across the network.
-                                        </p>
-                                        <div>
-                                            <Button asChild className="rounded-full bg-white text-black hover:bg-white/90 group-hover:scale-105 transition-transform">
-                                                <Link to="/explore">
-                                                    Open Explorer <ArrowRight className="ml-2 w-4 h-4" />
-                                                </Link>
-                                            </Button>
-                                        </div>
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <div className="relative z-10 h-full flex flex-col items-center text-center">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mb-6">
+                                        <Globe className="w-8 h-8 text-white" />
                                     </div>
-
-                                    {/* Abstract visualization for explorer */}
-                                    <div className="hidden md:flex flex-1 justify-center relative">
-                                        <div className="w-[300px] h-[200px] rounded-xl border border-white/10 bg-black/50 overflow-hidden relative p-4 grid gap-2">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full" />
-                                            {[1, 2, 3].map(i => (
-                                                <div key={i} className="h-10 rounded border border-white/5 bg-white-[0.02] flex items-center px-4 justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                                        <div className="h-2 w-20 bg-white/20 rounded" />
-                                                    </div>
-                                                    <div className="h-2 w-12 bg-white/10 rounded" />
-                                                </div>
-                                            ))}
-                                            <div className="mt-4 flex gap-2 justify-end">
-                                                <div className="w-10 h-10 rounded border border-white/5 flex items-center justify-center text-xs text-white/40">#12</div>
-                                                <div className="w-10 h-10 rounded border border-white/5 flex items-center justify-center text-xs text-white/40">#13</div>
-                                            </div>
-                                        </div>
+                                    <h3 className="text-2xl font-bold mb-4">BCH Intents Explorer</h3>
+                                    <p className="text-muted-foreground text-lg mb-8 flex-1">
+                                        Transparently verify cross-chain state. Track intents, solver competition, and atomic HTLC settlements in real-time.
+                                    </p>
+                                    <div>
+                                        <Button asChild className="rounded-full bg-white text-black hover:bg-white/90 group-hover:scale-105 transition-transform">
+                                            <Link to="/explore">
+                                                Open Explorer <ArrowRight className="ml-2 w-4 h-4" />
+                                            </Link>
+                                        </Button>
                                     </div>
                                 </div>
                             </motion.div>

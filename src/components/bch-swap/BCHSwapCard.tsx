@@ -11,6 +11,7 @@ import { BCHTokenSelector, BCH_TOKENS, SOLANA_TOKENS, ALL_BCH_SWAP_TOKENS } from
 import { useBCHWallet } from '@/context/BCHWalletProvider';
 import { useBCHSwap } from '@/context/BCHSwapContext';
 import { useWallet as useSolanaWallet } from '@solana/wallet-adapter-react';
+import { useLocation } from 'react-router-dom';
 import { useWallet as useMovementWallet } from '@/context/wallet-provider';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PriceService, PRICE_FEEDS } from '@/lib/pyth';
@@ -28,9 +29,31 @@ export interface BCHSwapCardProps {
 }
 
 export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) {
+    const location = useLocation();
+
+    // Parse query params for default tokens
+    const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+
+    // Find tokens matching the query params or fallback to defaults
+    const initialSellToken = useMemo(() => {
+        const sellParam = queryParams.get('sell');
+        if (sellParam) {
+            return ALL_BCH_SWAP_TOKENS.find(t => t.symbol.toUpperCase() === sellParam.toUpperCase()) || BCH_TOKENS[0];
+        }
+        return BCH_TOKENS[0];
+    }, [queryParams]);
+
+    const initialBuyToken = useMemo(() => {
+        const buyParam = queryParams.get('buy');
+        if (buyParam) {
+            return ALL_BCH_SWAP_TOKENS.find(t => t.symbol.toUpperCase() === buyParam.toUpperCase()) || SOLANA_TOKENS[0];
+        }
+        return SOLANA_TOKENS[0];
+    }, [queryParams]);
+
     // Token selection
-    const [sellToken, setSellToken] = useState<Token>(BCH_TOKENS[0]); // Default BCH
-    const [buyToken, setBuyToken] = useState<Token>(SOLANA_TOKENS[0]); // Default SOL
+    const [sellToken, setSellToken] = useState<Token>(initialSellToken);
+    const [buyToken, setBuyToken] = useState<Token>(initialBuyToken);
 
     // Amounts
     const [sellAmount, setSellAmount] = useState('');
@@ -40,6 +63,11 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
     const [duration, setDuration] = useState(3600); // For market Dutch auction
     const [limitPrice, setLimitPrice] = useState<string>('');
     const [expiryValue, setExpiryValue] = useState<string>('86400'); // Default 24h for limit orders
+
+    // XMR Specific Parameters
+    const [xmrAddress, setXmrAddress] = useState('');
+    const [xmrViewKey, setXmrViewKey] = useState('');
+    const [xmrSpendKey, setXmrSpendKey] = useState('');
 
     // Prices
     const [prices, setPrices] = useState<Record<string, PriceData>>({});
@@ -55,6 +83,20 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
     const swapType: BCHSwapType = useMemo(() => {
         return detectSwapType(sellToken.chain, buyToken.chain);
     }, [sellToken, buyToken, detectSwapType]);
+
+    // Update tokens if URL params change after mount
+    useEffect(() => {
+        const sellParam = queryParams.get('sell');
+        const buyParam = queryParams.get('buy');
+        if (sellParam) {
+            const token = ALL_BCH_SWAP_TOKENS.find(t => t.symbol.toUpperCase() === sellParam.toUpperCase());
+            if (token) setSellToken(token);
+        }
+        if (buyParam) {
+            const token = ALL_BCH_SWAP_TOKENS.find(t => t.symbol.toUpperCase() === buyParam.toUpperCase());
+            if (token) setBuyToken(token);
+        }
+    }, [queryParams]);
 
     // Fetch prices from both Pyth (major assets) and Cauldron (CashTokens)
     useEffect(() => {
@@ -175,8 +217,10 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
         if (!buyAmount || Number(buyAmount) <= 0) return false;
         if (needsBCHWallet && !bchConnected) return false;
         if (needsSolanaWallet && !solanaConnected) return false;
+        if (swapType === 'bch-to-xmr' && (!xmrAddress || !xmrViewKey || !xmrSpendKey)) return false;
+        if (swapType === 'xmr-to-bch' && !bchConnected) return false; // Needs destination
         return true;
-    }, [sellAmount, buyAmount, needsBCHWallet, bchConnected, needsSolanaWallet, solanaConnected]);
+    }, [sellAmount, buyAmount, needsBCHWallet, bchConnected, needsSolanaWallet, solanaConnected, swapType, xmrAddress, xmrViewKey, xmrSpendKey]);
 
     // Submit
     const handleSwap = async () => {
@@ -193,13 +237,19 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
             expiryTime: orderType === 'limit'
                 ? (expiryValue === 'forever' ? 4102444800 : Math.floor(Date.now() / 1000) + parseInt(expiryValue))
                 : undefined,
+            xmr: swapType === 'bch-to-xmr' ? {
+                viewKey: xmrViewKey,
+                spendKey: xmrSpendKey
+            } : undefined,
         };
 
         let recipientAddress: string | undefined;
 
         if (swapType === 'bch-to-sol' && solanaWallet.publicKey) {
             recipientAddress = solanaWallet.publicKey.toBase58();
-        } else if ((swapType === 'sol-to-bch' || swapType === 'mov-to-bch') && bchWallet.address) {
+        } else if (swapType === 'bch-to-xmr' && xmrAddress) {
+            recipientAddress = xmrAddress;
+        } else if ((swapType === 'sol-to-bch' || swapType === 'mov-to-bch' || swapType === 'xmr-to-bch') && bchWallet.address) {
             recipientAddress = bchWallet.address;
         } else if (swapType === 'bch-to-mov' && movementAccount?.address) {
             recipientAddress = movementAccount.address.toString();
@@ -245,6 +295,18 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
             label: 'Cross Chain',
             color: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
             desc: 'HTLC relay Movement → BCH'
+        },
+        'bch-to-xmr': {
+            icon: <Zap className="h-3.5 w-3.5" />,
+            label: 'Atomic Swap',
+            color: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+            desc: 'Adaptor Signature Swap BCH → XMR'
+        },
+        'xmr-to-bch': {
+            icon: <Zap className="h-3.5 w-3.5" />,
+            label: 'Atomic Swap',
+            color: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+            desc: 'Adaptor Signature Swap XMR → BCH'
         },
     };
 
@@ -489,6 +551,66 @@ export function BCHSwapCard({ orderType, onOrderTypeChange }: BCHSwapCardProps) 
                     </div>
                     <div className="text-xs text-muted-foreground">≈ ${buyUSD}</div>
                 </div>
+
+                {/* Conditional XMR Parameters */}
+                {swapType === 'bch-to-xmr' && (
+                    <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-orange-400 font-medium">
+                            <Zap className="h-4 w-4" />
+                            <span>Monero Adaptor Parameters</span>
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">Recipient XMR Address</label>
+                                <Input
+                                    type="text"
+                                    placeholder="4..."
+                                    className="h-9 bg-white/5 border-white/10 text-xs focus-visible:ring-1 focus-visible:ring-orange-500/50"
+                                    value={xmrAddress}
+                                    onChange={e => setXmrAddress(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Private View Key</label>
+                                    <Input
+                                        type="password"
+                                        placeholder="Hex format"
+                                        className="h-9 bg-white/5 border-white/10 text-xs focus-visible:ring-1 focus-visible:ring-orange-500/50"
+                                        value={xmrViewKey}
+                                        onChange={e => setXmrViewKey(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-muted-foreground mb-1 block">Private Spend Key</label>
+                                    <Input
+                                        type="password"
+                                        placeholder="Hex format"
+                                        className="h-9 bg-white/5 border-white/10 text-xs focus-visible:ring-1 focus-visible:ring-orange-500/50"
+                                        value={xmrSpendKey}
+                                        onChange={e => setXmrSpendKey(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground bg-orange-500/10 p-2 rounded border border-orange-500/20 leading-tight">
+                                These keys remain client-side to derive the adaptor parameters and decrypt your XMR when the relayer completes the swap.
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {swapType === 'xmr-to-bch' && (
+                    <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-orange-400 font-medium">
+                            <Zap className="h-4 w-4" />
+                            <span>Monero Deposit</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground bg-orange-500/10 p-3 rounded border border-orange-500/20 leading-relaxed">
+                            <p className="mb-2"><strong className="text-white">Relayer-assisted swap:</strong> You do not need to provide keys for this direction.</p>
+                            <p>After clicking "Swap", the backend will generate a unique Monero Stagenet deposit address for this transaction. You will have 2 hours to send the exact XMR amount to that address.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Route Info */}
                 {sellAmount && Number(sellAmount) > 0 && (

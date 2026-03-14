@@ -62,7 +62,7 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
                             transition={{ delay: 0.2 }}
                         >
                             <TokenDisplay
-                                tokenIcon="https://cryptologos.cc/logos/ethereum-eth-logo.png"
+                                tokenIcon="/logos/ethereum-eth-logo.svg"
                                 size="lg"
                                 compact
                                 className="ring-2 ring-background"
@@ -88,7 +88,7 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
                             transition={{ delay: 0.3 }}
                         >
                             <TokenDisplay
-                                tokenIcon="https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+                                tokenIcon="/logos/usd-coin-usdc-logo.svg"
                                 size="lg"
                                 compact
                                 className="ring-2 ring-background"

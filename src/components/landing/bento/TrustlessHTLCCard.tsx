@@ -75,7 +75,7 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                     <div className="flex flex-col items-center gap-1.5 flex-1">
                         <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border border-border/40 flex items-center justify-center">
                             <img
-                                src="https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png"
+                                src="/logos/bitcoin-cash-bch-logo.svg"
                                 alt="BCH"
                                 className="w-6 h-6 object-cover"
                             />

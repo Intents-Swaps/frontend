@@ -205,7 +205,16 @@ export function WalletPopup({ open, onClose }: WalletPopupProps) {
     }, [open, onClose]);
 
     // Calculate total portfolio value using shared hook to ensure UI consistency
-    const { tokens: activeTokens, totalValue: portfolioValue, loading: portfolioLoading } = usePortfolio();
+    const { tokens: activeTokens, totalValue: portfolioValue, loading: portfolioLoading, refetch: refetchPortfolio } = usePortfolio();
+
+    const handleGlobalRefresh = async () => {
+        setPriceLoading(true);
+        await Promise.all([
+            fetchPrices(),
+            refetchPortfolio()
+        ]);
+        setPriceLoading(false);
+    };
 
     // Disconnect all wallets
     const handleLogout = () => {
@@ -301,7 +310,7 @@ export function WalletPopup({ open, onClose }: WalletPopupProps) {
                                     Total Portfolio Value
                                 </span>
                                 <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"
-                                    onClick={fetchPrices} disabled={priceLoading || portfolioLoading}>
+                                    onClick={handleGlobalRefresh} disabled={priceLoading || portfolioLoading}>
                                     <RefreshCw className={cn("h-3 w-3", (priceLoading || portfolioLoading) && "animate-spin")} />
                                 </Button>
                                 <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-foreground"

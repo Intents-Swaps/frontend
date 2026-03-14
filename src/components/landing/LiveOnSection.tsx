@@ -1,108 +1,131 @@
-/**
- * LiveOnSection
- * 
- * Displays "Live on" status with a marquee of supported networks.
- * Replaces the old Features and Rates sections.
- */
-
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const NETWORKS = [
     {
         name: "Bitcoin Cash",
-        logo: (
-            <div className="flex items-center gap-2">
-                <img src="https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" alt="BCH" className="w-8 h-8" />
-                <span className="text-2xl font-bold tracking-tighter text-[#0AC18E]">Bitcoin Cash</span>
-            </div>
-        ),
-        color: "text-inherit"
+        icon: <img src="/logos/bitcoin-cash-bch-logo.svg" alt="BCH" className="w-12 h-12" />,
+        position: "top-[10%] left-[8%]",
+        delay: 0,
     },
     {
         name: "Solana",
-        logo: (
-            <div className="flex items-center gap-2">
-                <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.5 4H4.5L6.5 7.5H19.5L17.5 4Z" fill="url(#solana-gradient)" />
-                    <path d="M6.5 12H19.5L17.5 15.5H4.5L6.5 12Z" fill="url(#solana-gradient)" />
-                    <path d="M17.5 20H4.5L6.5 16.5H19.5L17.5 20Z" fill="url(#solana-gradient)" />
-                    <defs>
-                        <linearGradient id="solana-gradient" x1="4.5" y1="4" x2="19.5" y2="20" gradientUnits="userSpaceOnUse">
-                            <stop stopColor="#9945FF" />
-                            <stop offset="1" stopColor="#14F195" />
-                        </linearGradient>
-                    </defs>
-                </svg>
-                <span className="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-[#9945FF] to-[#14F195]">
-                    Solana
-                </span>
-            </div>
-        ),
-        color: "text-inherit"
+        icon: <img src="/logos/solana.svg" alt="Solana" className="w-12 h-12" />,
+        position: "top-[15%] right-[10%]",
+        delay: 0.2,
     },
     {
         name: "Movement",
-        logo: (
-            <div className="flex items-center gap-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-white">
-                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="currentColor" />
-                </svg>
-                <span className="text-2xl font-bold tracking-tighter text-white">Movement</span>
-            </div>
+        icon: (
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-white">
+                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="currentColor" />
+            </svg>
         ),
-        color: "text-inherit"
+        position: "bottom-[10%] right-[15%]",
+        delay: 0.5,
+    },
+    {
+        name: "Monero",
+        icon: <img src="/logos/monero.svg" alt="XMR" className="w-12 h-12" />,
+        position: "top-[42%] left-[2%]",
+        delay: 0.6,
+    },
+    {
+        name: "Ethereum",
+        icon: <img src="/logos/ethereum-eth-logo.svg" alt="ETH" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "bottom-[15%] left-[12%]",
+        delay: 0.7,
+    },
+    {
+        name: "Arbitrum",
+        icon: <img src="/logos/arbitrum-arb-logo.svg" alt="ARB" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "top-[45%] right-[2%]",
+        delay: 0.9,
+    },
+    {
+        name: "Avalanche",
+        icon: <img src="/logos/avalanche-avax-logo.svg" alt="AVAX" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "top-[4%] left-[45%]",
+        delay: 1.1,
+    },
+    {
+        name: "Base",
+        icon: <img src="/logos/Base_square_blue.svg" alt="BASE" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "bottom-[5%] left-[45%]",
+        delay: 1.3,
+    },
+    {
+        name: "Polygon",
+        icon: <img src="/logos/polygon-matic-logo.svg" alt="MATIC" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "bottom-[5%] left-[25%]",
+        delay: 1.5,
     }
 ];
 
-// Duplicate for infinite marquee
-const MARQUEE_ITEMS = [...NETWORKS, ...NETWORKS, ...NETWORKS, ...NETWORKS, ...NETWORKS];
-
 export function LiveOnSection() {
     return (
-        <section className="relative py-12 overflow-hidden bg-[#050505] border-y border-white/5">
+        <section className="relative py-20 lg:py-0 lg:min-h-[850px] flex items-center justify-center overflow-hidden bg-[#050505] border-y border-white/5">
             {/* Background Effects */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none"></div>
-            <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none opacity-20" />
-            <div className="absolute bottom-1/2 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none opacity-20" />
+            <div className="absolute top-1/2 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none opacity-40 -translate-y-1/2" />
+            <div className="absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[140px] pointer-events-none opacity-40 -translate-y-1/2" />
 
-            <div className="container mx-auto px-4 relative z-10">
+            <div className="container mx-auto px-4 relative z-10 w-full flex flex-col items-center justify-center h-full">
 
-                {/* Header */}
-                <div className="flex justify-center mb-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-subtle border border-white/10">
+                {/* Center Content */}
+                <div className="text-center z-20 max-w-4xl pointer-events-none flex flex-col items-center justify-center mt-12 lg:mt-0">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-subtle border border-white/10 mb-8 pointer-events-auto">
                         <span className="relative flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                         </span>
                         <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-                            Live On
+                            Live on Network
                         </span>
                     </div>
+
+                    <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+                        Swap tokens across chains - without bridging
+                    </h2>
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+                        Connect to the deepest liquidity networks instantly. The most efficient routing, executed in a single transaction.
+                    </p>
                 </div>
 
-                {/* Marquee */}
-                <div className="relative w-full overflow-hidden mask-linear-fade">
-                    <motion.div
-                        className="flex gap-24 w-max items-center"
-                        animate={{ x: ["0%", "-50%"] }}
-                        transition={{
-                            duration: 20,
-                            repeat: Infinity,
-                            ease: "linear",
-                            repeatType: "loop"
-                        }}
-                    >
-                        {MARQUEE_ITEMS.map((network, i) => (
-                            <div key={i} className={cn("flex-shrink-0 opacity-80 hover:opacity-100 transition-opacity grayscale hover:grayscale-0 duration-300", network.color)}>
-                                {network.logo}
+                {/* Scattered Cards for Desktop */}
+                <div className="absolute inset-0 hidden lg:block w-full h-full pointer-events-none z-10">
+                    {NETWORKS.map((network, idx) => (
+                        <motion.div
+                            key={idx}
+                            className={cn("absolute pointer-events-auto", network.position)}
+                            animate={{ y: [0, -20, 0] }}
+                            transition={{ duration: 5 + (idx % 3), repeat: Infinity, ease: "easeInOut", delay: network.delay }}
+                            whileHover={{ y: -25, scale: 1.1, zIndex: 50 }}
+                        >
+                            <div className="group flex flex-col items-center justify-center p-6 w-44 h-44 rounded-[2.5rem] bg-zinc-900/40 border border-white/5 backdrop-blur-xl hover:bg-zinc-800/80 transition-all duration-300 cursor-pointer shadow-2xl hover:shadow-[0_0_50px_rgba(255,255,255,0.08)] hover:border-white/20">
+                                <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                                    {network.icon}
+                                </div>
+                                <span className="text-base font-semibold text-white/50 group-hover:text-white transition-colors duration-300">
+                                    {network.name}
+                                </span>
                             </div>
-                        ))}
-                    </motion.div>
+                        </motion.div>
+                    ))}
+                </div>
 
-                    {/* Fade overlay edges */}
-                    <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#050505] to-transparent pointer-events-none" />
-                    <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#050505] to-transparent pointer-events-none" />
+                {/* Grid for Mobile */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-16 lg:hidden w-full max-w-2xl mx-auto relative z-10 pointer-events-auto">
+                    {NETWORKS.map((network, idx) => (
+                        <div key={idx} className="group flex flex-col items-center justify-center p-6 rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-md hover:bg-zinc-800/60 transition-colors cursor-pointer">
+                            <div className="mb-3 transform group-hover:scale-110 transition-transform duration-300">
+                                {network.icon}
+                            </div>
+                            <span className="text-sm font-semibold text-white/70 text-center">
+                                {network.name}
+                            </span>
+                        </div>
+                    ))}
                 </div>
 
             </div>

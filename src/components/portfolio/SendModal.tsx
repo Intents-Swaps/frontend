@@ -38,11 +38,11 @@ const MOVEMENT_TOKENS: SendToken[] = [
 
 const SOLANA_TOKENS: SendToken[] = [
     { symbol: 'SOL', name: 'Solana', icon: '/assets/solanaLogo.png', decimals: 9 },
-    { symbol: 'USDC', name: 'USD Coin', icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', decimals: 6, solanaMint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' },
+    { symbol: 'USDC', name: 'USD Coin', icon: '/logos/usd-coin-usdc-logo.svg', decimals: 6, solanaMint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU' },
 ];
 
 const BCH_TOKENS: SendToken[] = [
-    { symbol: 'BCH', name: 'Bitcoin Cash', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', decimals: 8 },
+    { symbol: 'BCH', name: 'Bitcoin Cash', icon: '/logos/bitcoin-cash-bch-logo.svg', decimals: 8 },
     { symbol: 'F-BREAKFAST', name: 'BREAKFAST', icon: 'https://ipfs.io/ipfs/bafybeicna3kw6fzajsayscsajr3zi4sie6orcfrg277wwhmfl4t6huqama/53636bc8c1afbe35a7ba169eadfac0aebadeacf96954a9a066a483e885580ed4.jpg', decimals: 0, bchCategory: '53636bc8c1afbe35a7ba169eadfac0aebadeacf96954a9a066a483e885580ed4' },
 ];
 
@@ -312,7 +312,7 @@ export function SendModal({ children }: { children?: React.ReactNode }) {
                             <p className="text-sm text-muted-foreground mb-4">Select the network you want to send from:</p>
                             {movWallet.connected && renderNetworkOption('Movement', 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png')}
                             {solWallet.connected && renderNetworkOption('Solana', '/assets/solanaLogo.png')}
-                            {bchWallet.connected && renderNetworkOption('Bitcoin Cash', 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png')}
+                            {bchWallet.connected && renderNetworkOption('Bitcoin Cash', '/logos/bitcoin-cash-bch-logo.svg')}
                         </div>
                     ) : showTokenPicker ? (
                         /* ── Token Picker ── */

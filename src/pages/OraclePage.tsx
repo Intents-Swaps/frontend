@@ -15,11 +15,11 @@ const ASSETS = [
 
     // Solana Chain
     { symbol: "SOL", name: "Solana", chain: "Solana", priceKey: "SOL", icon: "/assets/solanaLogo.png" },
-    { symbol: "USDC", name: "USD Coin", chain: "Solana", priceKey: "USDC", icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png" },
-    { symbol: "USDT", name: "Tether", chain: "Solana", priceKey: "USDT", icon: "https://cryptologos.cc/logos/tether-usdt-logo.png" },
+    { symbol: "USDC", name: "USD Coin", chain: "Solana", priceKey: "USDC", icon: "/logos/usd-coin-usdc-logo.svg" },
+    { symbol: "USDT", name: "Tether", chain: "Solana", priceKey: "USDT", icon: "/logos/usd-coin-usdc-logo.svg" },
 
     // Bitcoin Cash
-    { symbol: "BCH", name: "Bitcoin Cash", chain: "Bitcoin Cash", priceKey: "BCH", icon: "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" },
+    { symbol: "BCH", name: "Bitcoin Cash", chain: "Bitcoin Cash", priceKey: "BCH", icon: "/logos/bitcoin-cash-bch-logo.svg" },
 ];
 
 export function OraclePage() {

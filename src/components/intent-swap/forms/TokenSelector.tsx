@@ -19,21 +19,21 @@ export const TOKENS: Token[] = [
         name: "Wrapped Ether (Bridged)",
         type: "0x7eb1210794c2fdf636c5c9a5796b5122bf932458e3dd1737cf830d79954f5fdb",
         decimals: 8,
-        icon: "https://cryptologos.cc/logos/ethereum-eth-logo.png"
+        icon: "/logos/ethereum-eth-logo.svg"
     },
     {
         symbol: "USDC.e",
         name: "USD Coin (Bridged)",
         type: "0x45142fb00dde90b950183d8ac2815597892f665c254c3f42b5768bc6ae4c8489",
         decimals: 6,
-        icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+        icon: "/logos/usd-coin-usdc-logo.svg"
     },
     {
         symbol: "USDT.e",
         name: "Tether USD (Bridged)",
         type: "0x927595491037804b410c090a4c152c27af24d647863fc00b4a42904073d2d9de",
         decimals: 6,
-        icon: "https://cryptologos.cc/logos/tether-usdt-logo.png"
+        icon: "/logos/usd-coin-usdc-logo.svg"
     }
 ];
 

@@ -13,7 +13,7 @@ const ITEMS_PER_PAGE = 8;
 // Chain icon mapping
 // ============================================================================
 const CHAIN_ICONS: Record<string, string> = {
-    bch: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    bch: '/logos/bitcoin-cash-bch-logo.svg',
     solana: '/assets/solanaLogo.png',
     movement: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
 };

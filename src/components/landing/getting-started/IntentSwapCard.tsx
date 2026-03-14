@@ -21,7 +21,7 @@ const SWAP_PAIRS = [
         to: { symbol: 'BCH', amount: '40', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
     },
     {
-        from: { symbol: 'ETH', amount: '1', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg', color: '#627EEA' },
+        from: { symbol: 'ETH', amount: '1', icon: '/logos/ethereum-eth-logo.svg', color: '#627EEA' },
         to: { symbol: 'BCH', amount: '6', icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', color: '#0AC18E' },
     },
     {

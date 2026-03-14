@@ -7,9 +7,9 @@ import { useNavigate } from 'react-router-dom';
 const SUPPORTED_TOKENS = [
     { symbol: "MOVE", name: "Movement Coin", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png" },
     { symbol: "SOL", name: "Solana", icon: "/assets/solanaLogo.png" },
-    { symbol: "USDC", name: "USD Coin", icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png" },
-    { symbol: "USDT", name: "Tether", icon: "https://cryptologos.cc/logos/tether-usdt-logo.png" },
-    { symbol: "BCH", name: "Bitcoin Cash", icon: "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" },
+    { symbol: "USDC", name: "USD Coin", icon: "/logos/usd-coin-usdc-logo.svg" },
+    { symbol: "USDT", name: "Tether", icon: "/logos/usd-coin-usdc-logo.svg" },
+    { symbol: "BCH", name: "Bitcoin Cash", icon: "/logos/bitcoin-cash-bch-logo.svg" },
 ];
 
 interface TokenSearchModalProps {

@@ -8,11 +8,11 @@ import { BCHOrder } from '@/types';
 const BCH_ORDERS_KEY = 'bch_swap_orders';
 
 const TOKEN_ICONS: Record<string, string> = {
-    'BCH': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    'BCH': '/logos/bitcoin-cash-bch-logo.svg',
     'SOL': '/assets/solanaLogo.png',
     'MOVE': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
-    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    'USDC': '/logos/usd-coin-usdc-logo.svg',
+    'USDT': '/logos/usd-coin-usdc-logo.svg',
 };
 
 interface MergedActivity {

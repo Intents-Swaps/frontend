@@ -29,10 +29,10 @@ const NODES = [
 
 const TOKEN_ICONS = [
     'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
-    'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    '/logos/bitcoin-cash-bch-logo.svg',
     '/assets/solanaLogo.png',
-    'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    '/logos/usd-coin-usdc-logo.svg',
+    '/logos/usd-coin-usdc-logo.svg',
 ];
 
 const sizeClasses = {

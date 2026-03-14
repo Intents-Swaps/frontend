@@ -37,8 +37,8 @@ const DISPLAY_TOKENS = [
         symbol: 'ETH',
         name: 'Ethereum',
         priceKey: 'ETH',
-        icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-        chainIcon: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
+        icon: '/logos/ethereum-eth-logo.svg',
+        chainIcon: '/logos/ethereum-eth-logo.svg'
     },
     {
         symbol: 'SOL',
@@ -51,8 +51,8 @@ const DISPLAY_TOKENS = [
         symbol: 'USDC',
         name: 'USD Coin',
         priceKey: 'USDC',
-        icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-        chainIcon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'
+        icon: '/logos/usd-coin-usdc-logo.svg',
+        chainIcon: '/logos/usd-coin-usdc-logo.svg'
     },
 ];
 

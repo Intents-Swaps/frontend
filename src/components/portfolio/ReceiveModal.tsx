@@ -78,7 +78,7 @@ export function ReceiveModal({ children }: { children?: React.ReactNode }) {
                         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
                             {movConnected && renderNetworkOption('Movement', movAccount?.address?.toString(), 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png')}
                             {solConnected && renderNetworkOption('Solana', solPubKey?.toBase58(), '/assets/solanaLogo.png')}
-                            {bchConnected && renderNetworkOption('Bitcoin Cash', bchAddress, 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png')}
+                            {bchConnected && renderNetworkOption('Bitcoin Cash', bchAddress, '/logos/bitcoin-cash-bch-logo.svg')}
                         </div>
                     )}
                 </div>

@@ -2,9 +2,9 @@ import { Header } from '@/components/common/Header';
 import { Footer } from '@/components/common/Footer';
 import { FAQ } from '@/components/landing/FAQ';
 import { BentoSection } from '@/components/landing/bento';
-import { GettingStartedSection } from '@/components/landing/getting-started';
 import { LiveOnSection } from '@/components/landing/LiveOnSection';
 import { HeroStatsSection } from '@/components/landing/HeroStatsSection';
+import { RoadmapSection } from '@/components/landing/roadmap/RoadmapSection';
 
 
 
@@ -23,8 +23,8 @@ export default function LandingPage() {
                 {/* Live On Network Banner */}
                 <LiveOnSection />
 
-                {/* Getting Started - Horizontal Scroll Section */}
-                <GettingStartedSection />
+                {/* The Road to 2026 */}
+                <RoadmapSection />
 
                 <FAQ />
             </main>

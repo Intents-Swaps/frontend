@@ -20,6 +20,7 @@ const CG_ID_MAP: Record<string, string> = {
     'USDC': 'usd-coin',
     'USDT': 'tether',
     'MOVE': 'movement', // May not exist or may be a generic placeholder on CG
+    'XMR': 'monero',
 };
 
 // Reusable instance with a small timeout
@@ -93,7 +94,7 @@ export const CoinGeckoService = {
                     price_change_percentage_1h_in_currency: null, price_change_percentage_24h_in_currency: 2.5
                 },
                 'BCH': {
-                    id: 'bitcoin-cash', symbol: 'bch', name: 'Bitcoin Cash', image: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+                    id: 'bitcoin-cash', symbol: 'bch', name: 'Bitcoin Cash', image: '/logos/bitcoin-cash-bch-logo.svg',
                     current_price: 380.00, market_cap: 0, fully_diluted_valuation: null, total_volume: 0,
                     price_change_percentage_1h_in_currency: null, price_change_percentage_24h_in_currency: -1.2
                 },
@@ -103,9 +104,14 @@ export const CoinGeckoService = {
                     price_change_percentage_1h_in_currency: null, price_change_percentage_24h_in_currency: 4.2
                 },
                 'USDC': {
-                    id: 'usd-coin', symbol: 'usdc', name: 'USD Coin', image: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+                    id: 'usd-coin', symbol: 'usdc', name: 'USD Coin', image: '/logos/usd-coin-usdc-logo.svg',
                     current_price: 1.00, market_cap: 0, fully_diluted_valuation: null, total_volume: 0,
                     price_change_percentage_1h_in_currency: null, price_change_percentage_24h_in_currency: 0.01
+                },
+                'XMR': {
+                    id: 'monero', symbol: 'xmr', name: 'Monero', image: '/logos/monero.svg',
+                    current_price: 150.00, market_cap: 0, fully_diluted_valuation: null, total_volume: 0,
+                    price_change_percentage_1h_in_currency: null, price_change_percentage_24h_in_currency: -0.5
                 }
             };
         }

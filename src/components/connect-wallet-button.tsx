@@ -40,7 +40,7 @@ const SolanaIcon = () => (
 );
 
 const BCHIcon = () => (
-    <img src="https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" alt="BCH Wallet" width={24} height={24} className="rounded-md object-contain" />
+    <img src="/logos/bitcoin-cash-bch-logo.svg" alt="BCH Wallet" width={24} height={24} className="rounded-md object-contain" />
 );
 
 export function ConnectWalletButton({ className }: { className?: string }) {
@@ -94,11 +94,31 @@ export function ConnectWalletButton({ className }: { className?: string }) {
             <Button
                 onClick={() => setDialogOpen(true)}
                 variant="outline"
-                className={className || "gap-2 min-w-[140px]"}
+                className={className || "gap-2 min-w-[140px] px-3"}
             >
-                <Wallet className="h-4 w-4" />
-                {buttonLabel}
-                {isAnyConnected && <ChevronDown className="h-4 w-4 ml-1 opacity-50" />}
+                {isAnyConnected ? (
+                    <div className="flex items-center -space-x-2 mr-1">
+                        {bchConnected && (
+                            <div className="z-30 rounded-full border border-background overflow-hidden w-5 h-5 flex items-center justify-center bg-black">
+                                <img src="/logos/bitcoin-cash-bch-logo.svg" alt="BCH" className="w-full h-full object-cover" />
+                            </div>
+                        )}
+                        {solConnected && (
+                            <div className="z-20 rounded-full border border-background overflow-hidden w-5 h-5 flex items-center justify-center bg-black p-0.5">
+                                <img src="/assets/solanaLogo.png" alt="SOL" className="w-full h-full object-contain" />
+                            </div>
+                        )}
+                        {mvmtConnected && (
+                            <div className="z-10 rounded-full border border-background overflow-hidden w-5 h-5 flex items-center justify-center bg-black">
+                                <img src="https://docs.nightly.app/img/logo.png" alt="MOVE" className="w-full h-full object-cover" />
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <Wallet className="h-4 w-4" />
+                )}
+                <span className="truncate max-w-[100px]">{buttonLabel}</span>
+                {isAnyConnected && <ChevronDown className="h-4 w-4 ml-0.5 opacity-50 shrink-0" />}
             </Button>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

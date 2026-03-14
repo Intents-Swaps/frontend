@@ -3,6 +3,8 @@ import { BCHSwapCard } from '@/components/bch-swap/BCHSwapCard';
 import { LimitOrderHistory } from '@/components/bch-swap/LimitOrderHistory';
 import { BCHOrderType } from '@/types';
 import { useBCHSwapOptional } from '@/context/BCHSwapContext';
+import { useLocation } from 'react-router-dom';
+
 // ============================================================================
 // BCH Swap Page — /bchswap
 // ============================================================================
@@ -11,7 +13,18 @@ import { useBCHSwapOptional } from '@/context/BCHSwapContext';
 // Expands to a two-column layout when 'limit' orders are selected or after a swap.
 
 export default function BchSwapPage() {
-    const [orderType, setOrderType] = useState<BCHOrderType>('market');
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialOrderType = queryParams.get('type') === 'limit' ? 'limit' : 'market';
+
+    const [orderType, setOrderType] = useState<BCHOrderType>(initialOrderType);
+
+    // Ensure orderType updates if URL param changes after initial mount
+    useEffect(() => {
+        const typeParam = new URLSearchParams(location.search).get('type');
+        setOrderType(typeParam === 'limit' ? 'limit' : 'market');
+    }, [location.search]);
+
     const [showOrders, setShowOrders] = useState(false);
     const swapCtx = useBCHSwapOptional();
     const prevPendingCount = useRef<number | null>(null); // null = not yet initialized

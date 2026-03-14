@@ -41,7 +41,7 @@ const ASSETS = [
         value: '$5,000.00',
         pnl: '0.0%',
         isPositive: true,
-        tokenIcon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+        tokenIcon: '/logos/usd-coin-usdc-logo.svg',
     },
     {
         symbol: 'SOL',

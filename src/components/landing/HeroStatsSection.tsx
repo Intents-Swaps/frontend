@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { ArrowRight, Activity, Zap, Layers, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { AnimatedTradeButton } from '@/components/ui/animated-trade-button';
 
 // Stats Data
 const STATS = [
@@ -101,10 +102,18 @@ export function HeroStatsSection() {
                         </div>
 
                         {/* CTA */}
-                        <div className="pt-4">
-                            <Button asChild size="lg" className="rounded-full h-14 px-8 text-lg font-bold bg-white text-black hover:bg-white/90 shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] transition-transform hover:scale-105">
-                                <Link to="/trade">
-                                    Launch app <ArrowRight className="ml-2 w-5 h-5" />
+                        <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
+                            <AnimatedTradeButton size="lg" className="w-full sm:w-auto" />
+
+                            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto rounded-xl h-14 px-8 text-lg font-bold border-white/20 hover:bg-white/10 transition-all text-white backdrop-blur-sm shadow-[0_0_20px_-5px_rgba(255,255,255,0.1)]">
+                                <Link to="/ecosystem">
+                                    Explore <ArrowRight className="ml-2 w-5 h-5 opacity-70" />
+                                </Link>
+                            </Button>
+
+                            <Button asChild size="lg" className="w-full sm:w-auto rounded-xl h-14 px-8 text-lg font-bold bg-white text-black hover:bg-white/90 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
+                                <Link to="/integrate">
+                                    Build <Zap className="ml-2 w-5 h-5 opacity-70 text-black" />
                                 </Link>
                             </Button>
                         </div>

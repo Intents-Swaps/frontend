@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 
 const WALLET_TOKENS = [
     // Bitcoin Cash (Moved to top)
-    { symbol: 'BCH', name: 'Bitcoin Cash', chain: 'Bitcoin Cash', priceKey: 'BCH', icon: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png', decimals: 8 },
+    { symbol: 'BCH', name: 'Bitcoin Cash', chain: 'Bitcoin Cash', priceKey: 'BCH', icon: '/logos/bitcoin-cash-bch-logo.svg', decimals: 8 },
 
     // Movement Chain
     { symbol: 'MOVE', name: 'Movement Coin', chain: 'Movement', priceKey: 'MOVE', icon: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png', decimals: 8 },
@@ -30,8 +30,8 @@ const WALLET_TOKENS = [
     // Solana Chain
     { symbol: 'SOL', name: 'Solana', chain: 'Solana', priceKey: 'SOL', icon: '/assets/solanaLogo.png', decimals: 9 },
     { symbol: 'WSOL', name: 'Wrapped SOL', chain: 'Solana', priceKey: 'SOL', icon: '/assets/solanaLogo.png', decimals: 9 },
-    { symbol: 'USDC', name: 'USD Coin', chain: 'Solana', priceKey: 'USDC', icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', decimals: 6 },
-    { symbol: 'USDT', name: 'Tether', chain: 'Solana', priceKey: 'USDT', icon: 'https://cryptologos.cc/logos/tether-usdt-logo.png', decimals: 6 },
+    { symbol: 'USDC', name: 'USD Coin', chain: 'Solana', priceKey: 'USDC', icon: '/logos/usd-coin-usdc-logo.svg', decimals: 6 },
+    { symbol: 'USDT', name: 'Tether', chain: 'Solana', priceKey: 'USDT', icon: '/logos/usd-coin-usdc-logo.svg', decimals: 6 },
 ];
 
 interface WalletTokensTabProps {

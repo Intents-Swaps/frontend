@@ -5,7 +5,7 @@ export interface Token {
     icon: string;
     decimals: number;
     type: string;
-    chain?: 'movement' | 'solana' | 'bch';  // Which chain this token lives on
+    chain?: 'movement' | 'solana' | 'bch' | 'xmr';  // Which chain this token lives on
     categoryId?: string;  // BCH CashToken category ID (hex)
     address?: string;     // Token mint or smart contract address
     priceUsd?: number;    // Cauldron price in USD (for CashTokens)
@@ -35,7 +35,7 @@ export interface SwapParams {
 }
 
 // BCH Swap Types
-export type BCHSwapType = 'same-chain' | 'bch-to-sol' | 'sol-to-bch' | 'bch-to-mov' | 'mov-to-bch';
+export type BCHSwapType = 'same-chain' | 'bch-to-sol' | 'sol-to-bch' | 'bch-to-mov' | 'mov-to-bch' | 'bch-to-xmr' | 'xmr-to-bch';
 export type BCHOrderType = 'market' | 'limit';
 
 export interface BCHSwapParams {
@@ -47,6 +47,10 @@ export interface BCHSwapParams {
     orderType: BCHOrderType;
     duration?: number;     // Dutch auction duration (seconds)
     expiryTime?: number;   // Limit order expiry (unix timestamp)
+    xmr?: {
+        viewKey: string;
+        spendKey: string;
+    };
 }
 
 export interface BCHOrder {
@@ -76,5 +80,7 @@ export interface BCHOrder {
         destTimelock?: number;
         direction?: string;        // e.g. 'BCH_TO_SOL', 'SOL_TO_BCH', etc.
         solMaker?: string;
+        xmrDepositAddress?: string; // Auto-generated deposit address for XMR to BCH
+        xmrSpendKeyParam?: string;  // Used for BCH to XMR adaptor resolution
     };
 }

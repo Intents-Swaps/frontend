@@ -6,7 +6,7 @@ import axios from 'axios';
 const BCH_SOLANA_RELAYER_URL = import.meta.env.VITE_CROSS_CHAIN_RELAYER_URL || 'http://localhost:3004';
 
 const CHAIN_ICONS: Record<string, string> = {
-    bch: 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
+    bch: '/logos/bitcoin-cash-bch-logo.svg',
     solana: '/assets/solanaLogo.png',
     movement: 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
 };

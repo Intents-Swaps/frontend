@@ -32,7 +32,7 @@ const SWAP_PAIRS = [
     },
     // Cross-chain: USDC → BCH
     {
-        from: { icon: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', ticker: 'USDC' },
+        from: { icon: '/logos/usd-coin-usdc-logo.svg', ticker: 'USDC' },
         to: { icon: 'https://bitcoincash.org/img/green/bitcoin-cash-circle.svg', ticker: 'BCH' },
         type: 'Cross-Chain',
     },

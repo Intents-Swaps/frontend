@@ -36,7 +36,7 @@ const CHAINS = [
     {
         name: 'Ethereum',
         color: '#627EEA',
-        logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
+        logo: '/logos/ethereum-eth-logo.svg',
         shortName: 'ETH'
     },
 ];

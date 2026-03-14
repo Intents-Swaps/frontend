@@ -8,11 +8,11 @@ import { ArrowUpRight, ArrowDownRight, Loader2, Layers } from 'lucide-react';
 import { CauldronService, CauldronTokenData } from '@/lib/cauldron';
 
 const ASSETS = [
-    { symbol: "MOVE", name: "Movement Coin", chain: "Movement", icon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png" },
-    { symbol: "SOL", name: "Solana", chain: "Solana", icon: "/assets/solanaLogo.png" },
-    { symbol: "USDC", name: "USD Coin", chain: "Solana", icon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png" },
-    { symbol: "USDT", name: "Tether", chain: "Solana", icon: "https://cryptologos.cc/logos/tether-usdt-logo.png" },
-    { symbol: "BCH", name: "Bitcoin Cash", chain: "Bitcoin Cash", icon: "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png" },
+    { symbol: "MOVE", name: "Movement Coin", chain: "Movement", icon: "/logos/movement.svg" },
+    { symbol: "SOL", name: "Solana", chain: "Solana", icon: "/logos/solana.svg" },
+    { symbol: "USDC", name: "USD Coin", chain: "Solana", icon: "/logos/usd-coin-usdc-logo.svg" },
+    { symbol: "USDT", name: "Tether", chain: "Solana", icon: "/logos/usd-coin-usdc-logo.svg" },
+    { symbol: "BCH", name: "Bitcoin Cash", chain: "Bitcoin Cash", icon: "/logos/bitcoin-cash-bch-logo.svg" },
 ];
 
 interface TokensTableProps {

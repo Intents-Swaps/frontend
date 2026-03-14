@@ -16,7 +16,7 @@ export const BCH_TOKENS: Token[] = [
     {
         symbol: "BCH",
         name: "Bitcoin Cash",
-        icon: "https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png",
+        icon: "/logos/bitcoin-cash-bch-logo.svg",
         decimals: 8,
         type: "native",
         chain: "bch",
@@ -56,7 +56,18 @@ export const MOVEMENT_TOKENS: Token[] = [
     },
 ];
 
-export const ALL_BCH_SWAP_TOKENS = [...BCH_TOKENS, ...SOLANA_TOKENS, ...MOVEMENT_TOKENS];
+export const XMR_TOKENS: Token[] = [
+    {
+        symbol: "XMR",
+        name: "Monero",
+        icon: "/logos/monero.svg",
+        decimals: 12,
+        type: "native",
+        chain: "xmr",
+    }
+];
+
+export const ALL_BCH_SWAP_TOKENS = [...BCH_TOKENS, ...SOLANA_TOKENS, ...MOVEMENT_TOKENS, ...XMR_TOKENS];
 
 // ============================================================================
 // Token Selector Component
@@ -108,6 +119,7 @@ export function BCHTokenSelector({ value, onSelect, tokens = ALL_BCH_SWAP_TOKENS
     const bchTokens = filteredTokens.filter(t => t.chain === 'bch');
     const solTokens = filteredTokens.filter(t => t.chain === 'solana');
     const moveTokens = filteredTokens.filter(t => t.chain === 'movement');
+    const xmrTokens = filteredTokens.filter(t => t.chain === 'xmr');
 
     const handleSelect = (token: Token) => {
         onSelect(token);
@@ -120,6 +132,7 @@ export function BCHTokenSelector({ value, onSelect, tokens = ALL_BCH_SWAP_TOKENS
             case 'bch': return <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">BCH</span>;
             case 'solana': return <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400">SOL</span>;
             case 'movement': return <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400">MOVE</span>;
+            case 'xmr': return <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-400">XMR</span>;
             default: return null;
         }
     };
@@ -131,7 +144,7 @@ export function BCHTokenSelector({ value, onSelect, tokens = ALL_BCH_SWAP_TOKENS
             onClick={() => handleSelect(token)}
         >
             <img src={token.icon} alt={token.symbol} className="w-8 h-8 rounded-full mr-3" onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png';
+                (e.target as HTMLImageElement).src = '/logos/bitcoin-cash-bch-logo.svg';
             }} />
             <div className="text-left flex flex-col flex-1">
                 <div className="flex items-center gap-2">
@@ -158,7 +171,7 @@ export function BCHTokenSelector({ value, onSelect, tokens = ALL_BCH_SWAP_TOKENS
                     {value ? (
                         <div className="flex items-center gap-2">
                             <img src={value.icon} alt={value.symbol} className="w-6 h-6 rounded-full" onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png';
+                                (e.target as HTMLImageElement).src = '/logos/bitcoin-cash-bch-logo.svg';
                             }} />
                             <span className="font-semibold text-lg">{value.symbol}</span>
                         </div>
@@ -230,6 +243,21 @@ export function BCHTokenSelector({ value, onSelect, tokens = ALL_BCH_SWAP_TOKENS
                                     <div className="grid gap-0.5">
                                         {moveTokens.map(token => (
                                             <TokenRow key={`${token.chain}-${token.address || token.symbol}`} token={token} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Monero Chain Section */}
+                            {xmrTokens.length > 0 && (
+                                <div className="mt-2">
+                                    <div className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                                        Monero
+                                    </div>
+                                    <div className="grid gap-0.5">
+                                        {xmrTokens.map(token => (
+                                            <TokenRow key={`${token.chain}-${token.symbol}`} token={token} />
                                         ))}
                                     </div>
                                 </div>

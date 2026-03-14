@@ -121,7 +121,7 @@ export function WalletAddressesTab() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                            <img src="https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png"
+                            <img src="/logos/bitcoin-cash-bch-logo.svg"
                                 alt="BCH" className="h-4 w-4" />
                         </div>
                         <div>

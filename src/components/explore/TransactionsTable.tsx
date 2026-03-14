@@ -13,17 +13,17 @@ import axios from 'axios';
 // Token & Chain icon maps
 // ============================================================================
 const CHAIN_ICONS: Record<string, string> = {
-    'Bitcoin Cash': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
-    'Solana': '/assets/solanaLogo.png',
-    'Movement': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
+    'Bitcoin Cash': '/logos/bitcoin-cash-bch-logo.svg',
+    'Solana': '/logos/solana.svg',
+    'Movement': '/logos/movement.svg',
 };
 
 const TOKEN_ICONS: Record<string, string> = {
-    'BCH': 'https://cryptologos.cc/logos/bitcoin-cash-bch-logo.png',
-    'SOL': '/assets/solanaLogo.png',
-    'MOVE': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png',
-    'USDC': 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
-    'USDT': 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+    'BCH': '/logos/bitcoin-cash-bch-logo.svg',
+    'SOL': '/logos/solana.svg',
+    'MOVE': '/logos/movement.svg',
+    'USDC': '/logos/usd-coin-usdc-logo.svg',
+    'USDT': '/logos/usd-coin-usdc-logo.svg',
     'USDC.e': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDC.png',
     'USDT.e': 'https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/USDT.png',
 };
@@ -114,13 +114,13 @@ export function TransactionsTable({ activeChain, refreshTrigger }: { activeChain
             try {
                 const history = await fetchOrderHistory();
                 if (isMounted) {
-                    const moveTxs = history.map((order: any): ExplorerTx => {
+                    const moveTxs = history.map((order: any, idx: number): ExplorerTx => {
                         const sellSym = order.sellToken?.symbol || order.sell_token || 'MOVE';
                         const buySym = order.buyToken?.symbol || order.buy_token || 'USDC';
                         const mockUsdPrice = sellSym === 'MOVE' ? 0.8 : sellSym === 'SOL' ? 150 : sellSym === 'BCH' ? 250 : 1;
                         const st = order.status === 'completed' || order.status === 'filled' || order.status === 'FILLED' ? 'Completed' : order.status || 'Pending';
                         return {
-                            id: order.id || order.nonce || order.orderId || `move-${Math.random()}`,
+                            id: order.id || order.nonce || order.orderId || `move-${sellSym}-${buySym}-${order.createdAt || order.timestamp || Date.now()}-${idx}`,
                             timestamp: order.createdAt || order.timestamp || Date.now(),
                             sellToken: sellSym,
                             sellIcon: order.sellToken?.icon || TOKEN_ICONS[sellSym],

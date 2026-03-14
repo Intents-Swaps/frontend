@@ -22,8 +22,8 @@ export const TOKEN_PAIRS: TokenPair[] = [
         baseSymbol: 'ETH',
         quoteSymbol: 'USDT',
         tradingViewSymbol: 'BINANCE:ETHUSDT',
-        baseIcon: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-        quoteIcon: "https://cryptologos.cc/logos/tether-usdt-logo.png"
+        baseIcon: "/logos/ethereum-eth-logo.svg",
+        quoteIcon: "/logos/usd-coin-usdc-logo.svg"
     },
     {
         id: 'move-usdt',
@@ -31,15 +31,15 @@ export const TOKEN_PAIRS: TokenPair[] = [
         quoteSymbol: 'USDT',
         tradingViewSymbol: 'BINANCE:APTUSDT',
         baseIcon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png",
-        quoteIcon: "https://cryptologos.cc/logos/tether-usdt-logo.png"
+        quoteIcon: "/logos/usd-coin-usdc-logo.svg"
     },
     {
         id: 'weth-usdc',
         baseSymbol: 'ETH',
         quoteSymbol: 'USDC',
         tradingViewSymbol: 'BINANCE:ETHUSDC',
-        baseIcon: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-        quoteIcon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+        baseIcon: "/logos/ethereum-eth-logo.svg",
+        quoteIcon: "/logos/usd-coin-usdc-logo.svg"
     },
     {
         id: 'move-usdc',
@@ -47,15 +47,15 @@ export const TOKEN_PAIRS: TokenPair[] = [
         quoteSymbol: 'USDC',
         tradingViewSymbol: 'BINANCE:APTUSDC',
         baseIcon: "https://raw.githubusercontent.com/kitelabs-io/mvmt-tokens/main/logos/MOVE.png",
-        quoteIcon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+        quoteIcon: "/logos/usd-coin-usdc-logo.svg"
     },
     {
         id: 'usdt-usdc',
         baseSymbol: 'USDT',
         quoteSymbol: 'USDC',
         tradingViewSymbol: 'BINANCE:USDTUSDC',
-        baseIcon: "https://cryptologos.cc/logos/tether-usdt-logo.png",
-        quoteIcon: "https://cryptologos.cc/logos/usd-coin-usdc-logo.png"
+        baseIcon: "/logos/usd-coin-usdc-logo.svg",
+        quoteIcon: "/logos/usd-coin-usdc-logo.svg"
     },
 ];
 
