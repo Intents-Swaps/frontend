@@ -58,7 +58,7 @@ const SWAP_PAIRS = [
 
 // Feature badges
 const FEATURES = [
-    { icon: Shield, label: 'MEV protection', color: 'text-blue-500' },
+    { icon: Shield, label: 'MEV protection', color: 'text-cyan-500' },
     { icon: Sparkles, label: 'Best swap', color: 'text-primary' },
     { icon: Zap, label: 'Free', color: 'text-green-500' },
 ];
@@ -84,16 +84,16 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
         <div
             className={cn(
                 'bento-card h-full min-h-[420px] flex flex-col',
-                'mesh-gradient-pink grainy',
+                'mesh-gradient-teal grainy',
                 className
             )}
         >
             {/* Card Header */}
             <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-pink-500" />
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-teal-500" />
                 </div>
-                <span className="tag-pink">
+                <span className="tag-teal">
                     <Zap className="w-3 h-3" />
                     Intents Swap
                 </span>
@@ -101,7 +101,7 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
 
             {/* Tagline - Gradient text like Uniswap */}
             <h3 className="text-2xl md:text-3xl font-bold mb-2">
-                <span className="text-gradient-pink">
+                <span className="text-gradient-teal">
                     Smarter swaps. Aggregated liquidity.
                 </span>
             </h3>
@@ -116,7 +116,7 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
             {/* CTA and Feature Badges */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
                 <Link to="/trade">
-                    <Button variant="outline" className="rounded-full gap-2 group border-pink-500/30 hover:border-pink-500/50 hover:bg-pink-500/5">
+                    <Button variant="outline" className="rounded-full gap-2 group border-teal-500/30 hover:border-teal-500/50 hover:bg-teal-500/5">
                         Try Intent Swap
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
@@ -139,7 +139,7 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
                     {/* Animated routing line */}
                     <div className="absolute inset-0 flex items-center justify-center">
                         <motion.div
-                            className="h-0.5 bg-gradient-to-r from-pink-500/0 via-pink-500 to-pink-500/0"
+                            className="h-0.5 bg-gradient-to-r from-teal-500/0 via-teal-500 to-teal-500/0"
                             initial={{ width: 0, opacity: 0 }}
                             animate={{ width: '60%', opacity: 1 }}
                             transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
@@ -182,7 +182,7 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
                                         "text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1",
                                         pair.type === 'CashToken'
                                             ? "bg-emerald-500/10 text-emerald-500"
-                                            : "bg-purple-500/10 text-purple-500"
+                                            : "bg-sky-500/10 text-sky-500"
                                     )}
                                 >
                                     {pair.type}
@@ -191,11 +191,11 @@ export function MovementSwapsCard({ className }: MovementSwapsCardProps) {
                             <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
                                 transition={{ duration: 1, repeat: Infinity }}
-                                className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center"
+                                className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center"
                             >
-                                <ArrowRight className="w-5 h-5 text-pink-500" />
+                                <ArrowRight className="w-5 h-5 text-teal-500" />
                             </motion.div>
-                            <span className="text-xs text-pink-500 font-medium">~2s</span>
+                            <span className="text-xs text-teal-500 font-medium">~2s</span>
                         </div>
 
                         {/* To Token */}

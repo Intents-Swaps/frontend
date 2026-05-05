@@ -46,7 +46,7 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
         <div
             className={cn(
                 'bento-card h-full min-h-[320px] flex flex-col overflow-hidden',
-                'mesh-gradient-pink grainy',
+                'mesh-gradient-teal grainy',
                 className
             )}
         >
@@ -54,10 +54,10 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
             <div className="relative z-10 flex-1 flex flex-col max-w-[60%]">
                 {/* Card Header */}
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
-                        <Network className="w-5 h-5 text-pink-500" />
+                    <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+                        <Network className="w-5 h-5 text-teal-500" />
                     </div>
-                    <span className="tag-pink">
+                    <span className="tag-teal">
                         <Sparkles className="w-3 h-3" />
                         Relayer Network
                     </span>
@@ -65,7 +65,7 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
 
                 {/* Title */}
                 <h3 className="text-2xl md:text-3xl font-bold mb-2">
-                    <span className="text-gradient-pink">
+                    <span className="text-gradient-teal">
                         Relayer Network.
                     </span>
                 </h3>
@@ -80,7 +80,7 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
                 <Link to="/resolver" className="mt-auto">
                     <Button
                         variant="outline"
-                        className="rounded-full gap-2 group border-pink-500/30 hover:border-pink-500/50 hover:bg-pink-500/5"
+                        className="rounded-full gap-2 group border-teal-500/30 hover:border-teal-500/50 hover:bg-teal-500/5"
                     >
                         Start building
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -94,8 +94,8 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
                 <svg className="absolute inset-0 w-full h-full opacity-20">
                     <defs>
                         <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="hsl(330 80% 50%)" stopOpacity="0.5" />
-                            <stop offset="100%" stopColor="hsl(330 80% 50%)" stopOpacity="0" />
+                            <stop offset="0%" stopColor="hsl(175 80% 40%)" stopOpacity="0.5" />
+                            <stop offset="100%" stopColor="hsl(175 80% 40%)" stopOpacity="0" />
                         </linearGradient>
                     </defs>
                     <line x1="70%" y1="20%" x2="85%" y2="40%" stroke="url(#lineGradient)" strokeWidth="1" />
@@ -139,7 +139,7 @@ export function RelayerNetworkCard({ className }: RelayerNetworkCardProps) {
                     viewport={{ once: true }}
                     transition={{ delay: 0.5 }}
                 >
-                    <div className="w-full h-full bg-gradient-to-br from-pink-500/30 to-purple-600/20 rounded-3xl rotate-12 backdrop-blur-sm border border-pink-500/20" />
+                    <div className="w-full h-full bg-gradient-to-br from-teal-500/30 to-cyan-600/20 rounded-3xl rotate-12 backdrop-blur-sm border border-teal-500/20" />
                 </motion.div>
             </div>
         </div>

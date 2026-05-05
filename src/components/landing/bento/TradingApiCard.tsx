@@ -22,16 +22,16 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
         <div
             className={cn(
                 'bento-card h-full min-h-[320px] flex flex-col',
-                'mesh-gradient-orange grainy',
+                'mesh-gradient-green grainy',
                 className
             )}
         >
             {/* Card Header */}
             <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                    <Code2 className="w-5 h-5 text-orange-500" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                    <Code2 className="w-5 h-5 text-emerald-500" />
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-500">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500">
                     <Terminal className="w-3 h-3" />
                     Trading API
                 </span>
@@ -39,7 +39,7 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
 
             {/* Title */}
             <h3 className="text-2xl md:text-3xl font-bold mb-2">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-primary">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-primary">
                     The Ultimate Intent API
                 </span>
             </h3>
@@ -57,7 +57,7 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
             >
                 <Button
                     variant="outline"
-                    className="rounded-full gap-2 group border-orange-500/30 hover:border-orange-500/50 hover:bg-orange-500/5"
+                    className="rounded-full gap-2 group border-emerald-500/30 hover:border-emerald-500/50 hover:bg-emerald-500/5"
                 >
                     Integrate the API
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -85,15 +85,15 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
 
                         <pre className="text-zinc-400 overflow-x-auto">
                             <code>
-                                <span className="text-purple-400">import</span>{' '}
+                                <span className="text-cyan-400">import</span>{' '}
                                 <span className="text-zinc-200">{'{ IntentSwap }'}</span>{' '}
-                                <span className="text-purple-400">from</span>{' '}
+                                <span className="text-cyan-400">from</span>{' '}
                                 <span className="text-green-400">'@intent/sdk'</span>;{'\n\n'}
-                                <span className="text-purple-400">const</span>{' '}
+                                <span className="text-cyan-400">const</span>{' '}
                                 <span className="text-zinc-200">quote</span>{' '}
                                 <span className="text-zinc-500">=</span>{' '}
-                                <span className="text-purple-400">await</span>{' '}
-                                <span className="text-blue-400">intent</span>
+                                <span className="text-cyan-400">await</span>{' '}
+                                <span className="text-teal-400">intent</span>
                                 <span className="text-zinc-500">.</span>
                                 <span className="text-yellow-400">getQuote</span>
                                 <span className="text-zinc-500">(</span>
@@ -108,7 +108,7 @@ export function TradingApiCard({ className }: TradingApiCardProps) {
                                 <span className="text-zinc-500">,</span>{'\n'}
                                 {'  '}<span className="text-zinc-200">amount</span>
                                 <span className="text-zinc-500">:</span>{' '}
-                                <span className="text-orange-400">"1000"</span>{'\n'}
+                                <span className="text-emerald-400">"1000"</span>{'\n'}
                                 <span className="text-zinc-500">{'}'}</span>
                                 <span className="text-zinc-500">)</span>;
                             </code>

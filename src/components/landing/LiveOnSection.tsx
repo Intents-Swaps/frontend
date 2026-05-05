@@ -15,26 +15,17 @@ const NETWORKS = [
         delay: 0.2,
     },
     {
-        name: "Movement",
-        icon: (
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12 text-white">
-                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="currentColor" />
-            </svg>
-        ),
-        position: "bottom-[10%] right-[15%]",
-        delay: 0.5,
+        name: "Ethereum",
+        icon: <img src="/logos/ethereum-eth-logo.svg" alt="ETH" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
+        position: "bottom-[15%] left-[12%]",
+        delay: 0.7,
     },
+
     {
         name: "Monero",
         icon: <img src="/logos/monero.svg" alt="XMR" className="w-12 h-12" />,
         position: "top-[42%] left-[2%]",
         delay: 0.6,
-    },
-    {
-        name: "Ethereum",
-        icon: <img src="/logos/ethereum-eth-logo.svg" alt="ETH" className="w-12 h-12 grayscale group-hover:grayscale-0 transition-all duration-300 opacity-50 group-hover:opacity-100" />,
-        position: "bottom-[15%] left-[12%]",
-        delay: 0.7,
     },
     {
         name: "Arbitrum",
@@ -68,7 +59,7 @@ export function LiveOnSection() {
             {/* Background Effects */}
             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 mix-blend-overlay pointer-events-none"></div>
             <div className="absolute top-1/2 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[140px] pointer-events-none opacity-40 -translate-y-1/2" />
-            <div className="absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[140px] pointer-events-none opacity-40 -translate-y-1/2" />
+            <div className="absolute top-1/2 right-1/4 w-[600px] h-[600px] bg-teal-500/5 rounded-full blur-[140px] pointer-events-none opacity-40 -translate-y-1/2" />
 
             <div className="container mx-auto px-4 relative z-10 w-full flex flex-col items-center justify-center h-full">
 

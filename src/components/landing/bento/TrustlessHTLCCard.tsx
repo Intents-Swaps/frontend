@@ -53,7 +53,7 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
         <div
             className={cn(
                 'bento-card h-full min-h-[280px] flex flex-col',
-                'mesh-gradient-purple grainy',
+                'mesh-gradient-cyan grainy',
                 className
             )}
         >
@@ -63,8 +63,8 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                     <h3 className="text-xl md:text-2xl font-bold mb-1">Trustless Settlement</h3>
                     <p className="text-muted-foreground text-sm">No bridges. No trust. Just math.</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5 text-violet-400" />
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5 text-cyan-400" />
                 </div>
             </div>
 
@@ -87,10 +87,10 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                                 backgroundColor: isSettled
                                     ? 'rgba(52,211,153,0.15)'
                                     : isLocked
-                                        ? 'rgba(139,92,246,0.2)'
-                                        : 'rgba(139,92,246,0.05)',
+                                        ? 'rgba(6,182,212,0.2)'
+                                        : 'rgba(6,182,212,0.05)',
                             }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center border border-violet-500/20"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center border border-cyan-500/20"
                         >
                             <AnimatePresence mode="wait">
                                 {isSettled ? (
@@ -99,7 +99,7 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                                     </motion.div>
                                 ) : (
                                     <motion.div key="lock" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                        <Lock className={cn('w-4 h-4', isLocked ? 'text-violet-400' : 'text-muted-foreground')} />
+                                        <Lock className={cn('w-4 h-4', isLocked ? 'text-cyan-400' : 'text-muted-foreground')} />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -113,31 +113,31 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                             <motion.div
                                 animate={{ opacity: isLocked ? [0.3, 1, 0.3] : 0.2 }}
                                 transition={{ duration: 1.2, repeat: Infinity }}
-                                className="w-8 h-px bg-gradient-to-r from-transparent to-violet-500"
+                                className="w-8 h-px bg-gradient-to-r from-transparent to-cyan-500"
                             />
                             {/* Hash pill */}
                             <motion.div
                                 animate={{
                                     boxShadow: isLocked
-                                        ? ['0 0 0px rgba(139,92,246,0)', '0 0 12px rgba(139,92,246,0.7)', '0 0 0px rgba(139,92,246,0)']
-                                        : '0 0 0px rgba(139,92,246,0)',
-                                    backgroundColor: isSettled ? 'rgba(52,211,153,0.2)' : 'rgba(139,92,246,0.15)',
+                                        ? ['0 0 0px rgba(6,182,212,0)', '0 0 12px rgba(6,182,212,0.7)', '0 0 0px rgba(6,182,212,0)']
+                                        : '0 0 0px rgba(6,182,212,0)',
+                                    backgroundColor: isSettled ? 'rgba(52,211,153,0.2)' : 'rgba(6,182,212,0.15)',
                                 }}
                                 transition={{ duration: 1.2, repeat: Infinity }}
-                                className="px-2 py-1 rounded-md border border-violet-500/30 text-[9px] font-mono text-violet-300 whitespace-nowrap"
+                                className="px-2 py-1 rounded-md border border-cyan-500/30 text-[9px] font-mono text-cyan-300 whitespace-nowrap"
                             >
                                 sha256(s)
                             </motion.div>
                             <motion.div
                                 animate={{ opacity: isLocked ? [0.3, 1, 0.3] : 0.2 }}
                                 transition={{ duration: 1.2, repeat: Infinity }}
-                                className="w-8 h-px bg-gradient-to-l from-transparent to-violet-500"
+                                className="w-8 h-px bg-gradient-to-l from-transparent to-cyan-500"
                             />
                         </div>
                         {/* Phase label */}
                         <span className={cn(
                             'text-[10px] font-semibold tracking-wide uppercase mt-1',
-                            isSettled ? 'text-emerald-400' : 'text-violet-400'
+                            isSettled ? 'text-emerald-400' : 'text-cyan-400'
                         )}>
                             {phase === 'locking' && 'Locking…'}
                             {phase === 'locked' && 'Locked'}
@@ -161,10 +161,10 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                                 backgroundColor: isSettled
                                     ? 'rgba(52,211,153,0.15)'
                                     : isLocked
-                                        ? 'rgba(139,92,246,0.2)'
-                                        : 'rgba(139,92,246,0.05)',
+                                        ? 'rgba(6,182,212,0.2)'
+                                        : 'rgba(6,182,212,0.05)',
                             }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center border border-violet-500/20"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center border border-cyan-500/20"
                         >
                             <AnimatePresence mode="wait">
                                 {isSettled ? (
@@ -173,7 +173,7 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
                                     </motion.div>
                                 ) : (
                                     <motion.div key="lock" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                                        <Lock className={cn('w-4 h-4', isLocked ? 'text-violet-400' : 'text-muted-foreground')} />
+                                        <Lock className={cn('w-4 h-4', isLocked ? 'text-cyan-400' : 'text-muted-foreground')} />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -185,7 +185,7 @@ export function TrustlessHTLCCard({ className }: TrustlessHTLCCardProps) {
             {/* Bottom Stats Row */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/30">
                 <div className="text-center">
-                    <div className="text-2xl font-bold text-violet-400">Atomic</div>
+                    <div className="text-2xl font-bold text-cyan-400">Atomic</div>
                     <div className="text-xs text-muted-foreground">All-or-nothing</div>
                 </div>
                 <div className="text-center">

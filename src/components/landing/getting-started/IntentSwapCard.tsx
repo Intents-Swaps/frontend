@@ -55,21 +55,21 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
             "grainy group cursor-pointer"
         )}>
             {/* Gradient Background on Hover */}
-            <div className="absolute inset-0 mesh-gradient-pink opacity-0 group-hover:opacity-50 transition-opacity duration-500 rounded-3xl" />
+            <div className="absolute inset-0 mesh-gradient-teal opacity-0 group-hover:opacity-50 transition-opacity duration-500 rounded-3xl" />
 
             <div className="relative z-10 flex flex-col h-full">
                 {/* Step Badge */}
                 <div className="flex items-center justify-between mb-6">
-                    <span className="tag-pink">
+                    <span className="tag-teal">
                         Step {stepNumber}
                     </span>
-                    <div className="icon-box w-10 h-10 bg-pink-500/10 text-pink-500">
+                    <div className="icon-box w-10 h-10 bg-teal-500/10 text-teal-500">
                         <ArrowRightLeft className="w-5 h-5" />
                     </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-pink-500 transition-colors">
+                <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-teal-500 transition-colors">
                     Intent Swap
                 </h3>
 
@@ -122,11 +122,11 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
                             transition={{ duration: 0.3 }}
                         >
                             <motion.div
-                                className="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center"
+                                className="w-12 h-12 rounded-full bg-teal-500/10 flex items-center justify-center"
                                 animate={{ rotate: isSwapping ? 180 : 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <ArrowRightLeft className="w-5 h-5 text-pink-500" />
+                                <ArrowRightLeft className="w-5 h-5 text-teal-500" />
                             </motion.div>
 
                             {/* Particles on swap */}
@@ -135,7 +135,7 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
                                     {[...Array(6)].map((_, i) => (
                                         <motion.div
                                             key={i}
-                                            className="absolute w-1.5 h-1.5 rounded-full bg-pink-500"
+                                            className="absolute w-1.5 h-1.5 rounded-full bg-teal-500"
                                             initial={{
                                                 x: 0,
                                                 y: 0,
@@ -195,7 +195,7 @@ export function IntentSwapCard({ stepNumber }: CardProps) {
                 {/* Features */}
                 <div className="flex gap-4 mt-auto">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Sparkles className="w-3.5 h-3.5 text-pink-500" />
+                        <Sparkles className="w-3.5 h-3.5 text-teal-500" />
                         <span>MEV Protected</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

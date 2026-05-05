@@ -11,29 +11,29 @@ const STATS = [
         label: "24h Volume",
         value: "$6.6B",
         change: "+12.5%",
-        color: "text-green-400",
-        icon: <BarChart3 className="w-4 h-4 text-green-400" />
+        color: "text-emerald-400",
+        icon: <BarChart3 className="w-4 h-4 text-emerald-400" />
     },
     {
         label: "Active Resolvers",
         value: "42",
         sub: "Live Now",
-        color: "text-blue-400",
-        icon: <Activity className="w-4 h-4 text-blue-400" />
+        color: "text-emerald-300",
+        icon: <Activity className="w-4 h-4 text-emerald-300" />
     },
     {
         label: "Avg Fill Time",
         value: "~230ms",
         sub: "Lightning Fast",
-        color: "text-yellow-400",
-        icon: <Zap className="w-4 h-4 text-yellow-400" />
+        color: "text-amber-400",
+        icon: <Zap className="w-4 h-4 text-amber-400" />
     },
     {
         label: "Total Value Locked",
         value: "$2.5B",
         sub: "Across 3 Chains",
-        color: "text-purple-400",
-        icon: <Layers className="w-4 h-4 text-purple-400" />
+        color: "text-teal-400",
+        icon: <Layers className="w-4 h-4 text-teal-400" />
     }
 ];
 
@@ -43,8 +43,8 @@ export function HeroStatsSection() {
             {/* Background Effects */}
             <div className="absolute inset-0 bg-[#050505] z-0" />
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-primary/10 rounded-full blur-[150px] animate-pulse-glow" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-500/10 rounded-full blur-[150px] animate-pulse-glow delay-1000" />
+                <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-emerald-500/10 rounded-full blur-[150px] animate-pulse-glow" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-zinc-600/10 rounded-full blur-[150px] animate-pulse-glow delay-1000" />
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
             </div>
 
@@ -58,28 +58,21 @@ export function HeroStatsSection() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="space-y-8"
                     >
-                        {/* Eyebrow / Logo Placeholder */}
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 bg-white text-black font-black flex items-center justify-center rounded-xl text-xl">
-                                M
-                            </div>
-                            <span className="text-xl font-bold tracking-wide">BCH Intents Protocol</span>
-                        </div>
 
                         {/* Main Typography */}
                         <div className="space-y-2">
                             <h2 className="text-xl md:text-2xl font-medium text-muted-foreground uppercase tracking-widest pl-1">
                                 Explore the
                             </h2>
-                            <h1 className="text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85]">
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-500 to-yellow-400">
+                            <h1 className="text-7xl md:text-8xl lg:text-[10rem] font-black tracking-tighter leading-[0.85]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600">
                                     BRIDGE
                                 </span>
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-600">
+                                <span className="text-white">
                                     LESS
                                 </span>
                                 <br />
-                                <span className="text-white block mt-2 text-5xl md:text-6xl lg:text-7xl">
+                                <span className="text-white/90 block mt-2 md:mt-4 text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
                                     future of DeFi
                                 </span>
                             </h1>
@@ -128,8 +121,8 @@ export function HeroStatsSection() {
                     >
                         {/* Stats Header Card */}
                         <div className="mb-6 relative group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-3xl opacity-20 blur-xl group-hover:opacity-30 transition-opacity" />
-                            <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-[28px] blur-sm opacity-50" />
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/30 via-zinc-800 to-black rounded-3xl opacity-20 blur-xl group-hover:opacity-30 transition-opacity" />
+                            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-zinc-800/50 to-transparent rounded-[28px] blur-sm opacity-50" />
 
                             <div className="relative bg-black/80 backdrop-blur-xl border border-white/10 p-6 rounded-[24px] flex items-center justify-between overflow-hidden">
                                 {/* Animated background elements inside header */}
@@ -157,23 +150,23 @@ export function HeroStatsSection() {
                                     key={i}
                                     whileHover={{ scale: 1.02 }}
                                     className={cn(
-                                        "bento-card relative p-6 rounded-[24px] flex flex-col justify-between min-h-[180px]",
-                                        "bg-zinc-900/40 border border-white/5 backdrop-blur-md overflow-hidden group"
+                                        "bento-card-interactive relative p-6 rounded-[24px] flex flex-col justify-between min-h-[180px]",
+                                        "glass-subtle border border-white/5 overflow-hidden group"
                                     )}
                                 >
                                     {/* Hover Glow */}
-                                    <div className={`absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                                    <div className={`absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
 
                                     <div className="relative z-10">
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="text-muted-foreground text-sm font-medium">{stat.label}</span>
                                             {stat.icon}
                                         </div>
-                                        <div className={`text-3xl md:text-4xl font-bold tracking-tight mb-1 ${stat.color} group-hover:scale-105 transition-transform origin-left`}>
+                                        <div className={`text-3xl md:text-4xl font-black font-mono tracking-tighter mb-1 ${stat.color} group-hover:scale-105 transition-transform origin-left`}>
                                             {stat.value}
                                         </div>
                                         {stat.sub && (
-                                            <span className="text-xs font-mono text-white/40 uppercase tracking-wider">{stat.sub}</span>
+                                            <span className="text-[10px] font-mono text-white/40 uppercase tracking-[0.2em] font-semibold">{stat.sub}</span>
                                         )}
                                         {stat.change && (
                                             <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">{stat.change}</span>

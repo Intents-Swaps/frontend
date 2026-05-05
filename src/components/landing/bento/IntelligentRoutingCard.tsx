@@ -22,7 +22,7 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
         <div
             className={cn(
                 'bento-card h-full min-h-[280px] flex flex-col',
-                'mesh-gradient-blue grainy',
+                'mesh-gradient-cyan grainy',
                 className
             )}
         >
@@ -32,8 +32,8 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
                     <h3 className="text-xl md:text-2xl font-bold mb-1">Intelligent Routing</h3>
                     <p className="text-muted-foreground text-sm">Any token, best price, lowest slippage</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <Route className="w-5 h-5 text-blue-500" />
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                    <Route className="w-5 h-5 text-cyan-500" />
                 </div>
             </div>
 
@@ -74,7 +74,7 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
                     <motion.div
                         animate={{ x: [0, 5, 0] }}
                         transition={{ duration: 1, repeat: Infinity }}
-                        className="text-blue-500"
+                        className="text-cyan-500"
                     >
                         <ArrowRight className="w-6 h-6" />
                     </motion.div>
@@ -118,7 +118,7 @@ export function IntelligentRoutingCard({ className }: IntelligentRoutingCardProp
             {/* Bottom Stats Row */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/30">
                 <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-500">200+</div>
+                    <div className="text-2xl font-bold text-cyan-500">200+</div>
                     <div className="text-xs text-muted-foreground">Token pairs</div>
                 </div>
                 <div className="text-center">

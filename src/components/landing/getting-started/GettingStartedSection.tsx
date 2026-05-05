@@ -100,7 +100,7 @@ export function GettingStartedSection() {
                 {/* Background Effects */}
                 <div className="absolute inset-0 grainy" />
                 <div className="absolute -top-[20%] -left-[10%] w-[50vw] h-[50vw] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
-                <div className="absolute -bottom-[20%] -right-[10%] w-[50vw] h-[50vw] bg-purple-500/10 blur-[100px] rounded-full pointer-events-none" />
+                <div className="absolute -bottom-[20%] -right-[10%] w-[50vw] h-[50vw] bg-teal-500/10 blur-[100px] rounded-full pointer-events-none" />
 
                 <motion.div
                     className="relative z-10 w-full"

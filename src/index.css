@@ -163,16 +163,18 @@
       radial-gradient(ellipse at 50% 50%, hsl(270 50% 40% / 0.1) 0%, transparent 70%);
   }
 
-  .mesh-gradient-pink {
+  .mesh-gradient-pink,
+  .mesh-gradient-teal {
     background:
-      radial-gradient(ellipse at 70% 70%, hsl(330 80% 50% / 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 30% 30%, hsl(280 70% 50% / 0.1) 0%, transparent 50%);
+      radial-gradient(ellipse at 70% 70%, hsl(175 80% 40% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 30%, hsl(160 70% 40% / 0.1) 0%, transparent 50%);
   }
 
-  .dark .mesh-gradient-pink {
+  .dark .mesh-gradient-pink,
+  .dark .mesh-gradient-teal {
     background:
-      radial-gradient(ellipse at 70% 70%, hsl(330 80% 50% / 0.25) 0%, transparent 50%),
-      radial-gradient(ellipse at 30% 30%, hsl(280 70% 50% / 0.15) 0%, transparent 50%);
+      radial-gradient(ellipse at 70% 70%, hsl(175 80% 40% / 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 30% 30%, hsl(160 70% 40% / 0.15) 0%, transparent 50%);
   }
 
   .mesh-gradient-blue {
@@ -223,16 +225,18 @@
       radial-gradient(ellipse at 20% 20%, hsl(30 100% 50% / 0.15) 0%, transparent 50%);
   }
 
-  .mesh-gradient-purple {
+  .mesh-gradient-purple,
+  .mesh-gradient-cyan {
     background:
-      radial-gradient(ellipse at 30% 70%, hsl(262 83% 58% / 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, hsl(280 70% 50% / 0.08) 0%, transparent 50%);
+      radial-gradient(ellipse at 30% 70%, hsl(190 90% 50% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(185 80% 45% / 0.08) 0%, transparent 50%);
   }
 
-  .dark .mesh-gradient-purple {
+  .dark .mesh-gradient-purple,
+  .dark .mesh-gradient-cyan {
     background:
-      radial-gradient(ellipse at 30% 70%, hsl(262 83% 58% / 0.28) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, hsl(280 70% 50% / 0.15) 0%, transparent 50%);
+      radial-gradient(ellipse at 30% 70%, hsl(190 90% 50% / 0.28) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, hsl(185 80% 45% / 0.15) 0%, transparent 50%);
   }
 
   /* --- Glow Effects --- */
@@ -330,9 +334,10 @@
     background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(161 100% 41%) 100%);
   }
 
-  .text-gradient-pink {
+  .text-gradient-pink,
+  .text-gradient-teal {
     @apply text-transparent bg-clip-text;
-    background-image: linear-gradient(135deg, hsl(330 80% 60%) 0%, hsl(280 70% 60%) 100%);
+    background-image: linear-gradient(135deg, hsl(175 80% 45%) 0%, hsl(160 70% 50%) 100%);
   }
 
   /* --- Icon Containers --- */
@@ -362,8 +367,9 @@
     @apply tag bg-primary/10 text-primary;
   }
 
-  .tag-pink {
-    @apply tag bg-pink-500/10 text-pink-500;
+  .tag-pink,
+  .tag-teal {
+    @apply tag bg-teal-500/10 text-teal-500;
   }
 
   .tag-green {
@@ -377,5 +383,46 @@
 
   .stat-label {
     @apply text-sm text-muted-foreground;
+  }
+
+  /* --- Blazing Trade Button Animations --- */
+  @keyframes border-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-border-spin {
+    animation: border-spin 3s linear infinite;
+  }
+
+  .animate-border-spin-fast {
+    animation: border-spin 1.5s linear infinite;
+  }
+
+  @keyframes trade-shimmer {
+    0%   { transform: translateX(-150%) skewX(-12deg); }
+    100% { transform: translateX(250%) skewX(-12deg); }
+  }
+
+  .animate-shimmer {
+    animation: trade-shimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes spark {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(0.5);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-8px) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.3);
+    }
+  }
+
+  .animate-spark {
+    animation: spark 1.2s ease-out infinite;
   }
 }

@@ -30,8 +30,8 @@ export function BentoSection({ className }: BentoSectionProps) {
             <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-950 grainy" />
 
             {/* Ambient Gradient Orbs */}
-            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/5 dark:bg-primary/10 rounded-full blur-[120px] animate-pulse-glow" />
-            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-secondary/5 dark:bg-secondary/10 rounded-full blur-[100px]" />
+            <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-[120px] animate-pulse-glow" />
+            <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-[100px]" />
 
             <div className="container mx-auto px-4 relative z-10">
                 {/* Section Header */}

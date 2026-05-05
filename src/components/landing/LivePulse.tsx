@@ -14,8 +14,8 @@ const stats = [
         label: "Active Resolvers",
         value: "42",
         change: "+3",
-        icon: <Users className="w-4 h-4 text-blue-400" />,
-        color: "from-blue-500/20 to-blue-500/5"
+        icon: <Users className="w-4 h-4 text-cyan-400" />,
+        color: "from-cyan-500/20 to-cyan-500/5"
     },
     {
         label: "Avg Fill Time",
@@ -57,7 +57,7 @@ const TokenIcon = ({ symbol }: { symbol: string }) => {
 export const LivePulse = () => {
     return (
         <div className="w-full max-w-[500px] relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-purple-500 to-pink-500 rounded-[32px] blur-xl opacity-20 animate-pulse" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-[32px] blur-xl opacity-20 animate-pulse" />
 
             <div className="relative bg-zinc-900/50 backdrop-blur-xl rounded-[24px] border border-white/10 overflow-hidden">
                 {/* Header */}

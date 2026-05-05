@@ -152,7 +152,7 @@ export function TrackPortfolioCard({ stepNumber }: CardProps) {
                         <span>Multi-chain</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <BarChart3 className="w-3.5 h-3.5 text-blue-500" />
+                        <BarChart3 className="w-3.5 h-3.5 text-cyan-500" />
                         <span>Real-time PnL</span>
                     </div>
                 </div>

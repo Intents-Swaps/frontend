@@ -56,13 +56,13 @@ export function DepositFundCard({ stepNumber }: CardProps) {
                     <span className="tag-primary">
                         Step {stepNumber}
                     </span>
-                    <div className="icon-box w-10 h-10 bg-blue-500/10 text-blue-500">
+                    <div className="icon-box w-10 h-10 bg-cyan-500/10 text-cyan-500">
                         <ArrowDownToLine className="w-5 h-5" />
                     </div>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-blue-500 transition-colors">
+                <h3 className="text-2xl md:text-3xl font-bold mb-3 group-hover:text-cyan-500 transition-colors">
                     Deposit Funds
                 </h3>
 
@@ -171,7 +171,7 @@ export function DepositFundCard({ stepNumber }: CardProps) {
                 {/* Features */}
                 <div className="flex gap-4 mt-auto">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Zap className="w-3.5 h-3.5 text-blue-500" />
+                        <Zap className="w-3.5 h-3.5 text-cyan-500" />
                         <span>Instant deposits</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">

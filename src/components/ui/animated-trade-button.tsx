@@ -1,57 +1,123 @@
-import { motion } from "framer-motion";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
+// ─────────────────────────────────────────────
+// AnimatedTradeButton — Blazing wireframe CTA
+// ─────────────────────────────────────────────
+
 interface Props {
     className?: string;
-    size?: 'default' | 'lg';
+    size?: "default" | "lg";
     onClick?: () => void;
 }
 
-export function AnimatedTradeButton({ className, size = 'default', onClick }: Props) {
-    const isLg = size === 'lg';
+export function AnimatedTradeButton({
+    className,
+    size = "default",
+    onClick,
+}: Props) {
+    const isLg = size === "lg";
+    const btnRef = useRef<HTMLAnchorElement>(null);
+    const [hovering, setHovering] = useState(false);
 
     return (
         <Link
+            ref={btnRef}
             to="/trade"
             onClick={onClick}
-            className={cn("relative group block cursor-pointer", className)}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            className={cn("relative group block cursor-pointer select-none", className)}
         >
-            {/* Outer Glow / Wireframe effect */}
-            <div className="absolute -inset-[2px] rounded-xl bg-gradient-to-r from-emerald-400 via-green-500 to-yellow-400 opacity-60 blur-md group-hover:opacity-100 transition duration-500 animate-pulse-glow" />
+            {/* ── 1. Outer soft ambient glow ── */}
+            <div
+                className={cn(
+                    "absolute -inset-2 rounded-xl blur-xl transition-all duration-700 pointer-events-none",
+                    "bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0",
+                    hovering ? "opacity-100 scale-105" : "opacity-0 scale-100"
+                )}
+            />
 
-            {/* Inner button container - border box with curved edges */}
-            <div className={cn(
-                "relative flex items-center justify-center bg-black/90 rounded-xl border border-white/20 overflow-hidden backdrop-blur-sm",
-                isLg ? "h-14 px-10 text-xl font-bold" : "h-10 px-6 text-sm font-bold"
-            )}>
+            {/* ── 2. Inner card surface (Glass Solid style) ── */}
+            <div
+                className={cn(
+                    "relative flex items-center justify-center gap-2 rounded-xl overflow-hidden transition-all duration-300",
+                    "glass-solid border border-emerald-500/30 shadow-[inset_0_1px_10px_rgba(16,185,129,0.15)]",
+                    hovering ? "bg-emerald-950/20 shadow-[inset_0_1px_20px_rgba(16,185,129,0.3)] border-emerald-400/50" : "bg-[#050505]/80",
+                    isLg
+                        ? "h-14 px-10 text-lg font-black font-mono tracking-wider"
+                        : "h-10 px-6 text-sm font-black font-mono tracking-widest"
+                )}
+            >
+                {/* Subtle mesh / noise texture */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1] mix-blend-overlay pointer-events-none" />
 
-                {/* Morphing / Shape-shifting animation background inside */}
-                <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen overflow-hidden rounded-xl">
-                    <motion.div
-                        animate={{
-                            rotate: [0, 90, 180, 270, 360],
-                            scale: [1, 1.8, 1.2, 1.8, 1],
-                            borderRadius: ["30%", "40%", "20%", "50%", "30%"]
-                        }}
-                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-br from-green-500/40 to-emerald-400/20 blur-xl"
-                    />
-                    <motion.div
-                        animate={{
-                            rotate: [360, 270, 180, 90, 0],
-                            scale: [1, 1.5, 1],
-                            borderRadius: ["50%", "20%", "40%", "30%", "50%"]
-                        }}
-                        transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] bg-gradient-to-tl from-yellow-400/30 to-transparent blur-lg"
-                    />
+                {/* Inner moving shimmer highlight */}
+                <div
+                    className={cn(
+                        "absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none",
+                        hovering && "opacity-100"
+                    )}
+                >
+                    <div className="absolute -inset-full animate-shimmer bg-gradient-to-r from-transparent via-emerald-400/[0.15] to-transparent skew-x-12" />
                 </div>
 
-                {/* Text */}
-                <span className="relative z-10 text-white tracking-widest group-hover:text-emerald-300 transition-colors drop-shadow-md">
-                    {isLg ? 'TRADE NOW' : 'TRADE'}
+                {/* ── Lightning bolt icon ── */}
+                <svg
+                    width={isLg ? 20 : 14}
+                    height={isLg ? 20 : 14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    className={cn(
+                        "relative z-10 transition-all duration-300",
+                        hovering
+                            ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                            : "text-emerald-500"
+                    )}
+                >
+                    <path
+                        d="M13 2L3 14H12L11 22L21 10H12L13 2Z"
+                        fill="currentColor"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    />
+                </svg>
+
+                {/* ── Text ── */}
+                <span
+                    className={cn(
+                        "relative z-10 transition-all duration-300",
+                        hovering
+                            ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                            : "text-white/90"
+                    )}
+                >
+                    {isLg ? "TRADE NOW" : "TRADE"}
                 </span>
+
+                {/* Right arrow that slides in on hover */}
+                <svg
+                    width={isLg ? 18 : 14}
+                    height={isLg ? 18 : 14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={cn(
+                        "relative z-10 transition-all duration-300 text-emerald-400",
+                        hovering
+                            ? "translate-x-0 opacity-100 drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                            : "-translate-x-2 opacity-0"
+                    )}
+                >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                </svg>
             </div>
         </Link>
     );
