@@ -86,14 +86,17 @@ export function Header() {
                 {/* Left Section: Logo (& Nav optionally for App) */}
                 <div className="flex items-center gap-8 lg:gap-12 shrink-0">
                     {/* Logo - On landing pages it redirects to home, on app pages it redirects to trade or home, let's keep it to home */}
-                    <Link to="/" className="flex items-center gap-2 group shrink-0">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:bg-primary/20 transition-colors">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary transition-transform group-hover:scale-110 duration-300">
-                                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </div>
-                        <span className="font-heading font-bold text-xl tracking-tight hidden sm:block text-foreground">
-                            <span className="text-emerald-500">BCH </span><span className="text-white">Intents</span>
+                    <Link to="/" className="flex items-center group shrink-0">
+                        <img
+                            src="/assets/bchintentslogo.png"
+                            alt="BCH Intents Protocol Logo"
+                            className="w-20 h-20 -ml-2 -mr-4 object-contain transition-transform group-hover:scale-110 duration-300"
+                        />
+                        <span className="font-heading font-black text-2xl tracking-tighter hidden sm:block text-white drop-shadow-sm group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all">
+                            <span className="text-emerald-500 group-hover:text-emerald-400 transition-colors">BCH </span>
+                            <span>
+                                Intents Protocol
+                            </span>
                         </span>
                     </Link>
 
@@ -120,13 +123,13 @@ export function Header() {
                                         key={item.path}
                                         to={item.path}
                                         className={cn(
-                                            "text-sm font-medium transition-all duration-200 hover:text-primary relative group py-2",
-                                            location.pathname === item.path ? "text-primary" : "text-muted-foreground/80"
+                                            "text-[15px] font-semibold transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] relative group py-2",
+                                            location.pathname === item.path ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" : "text-zinc-300"
                                         )}
                                     >
                                         {item.name}
                                         <span className={cn(
-                                            "absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left",
+                                            "absolute bottom-0 left-0 w-full h-[2px] bg-emerald-400 scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left shadow-[0_0_8px_rgba(52,211,153,0.8)]",
                                             location.pathname === item.path && "scale-x-100"
                                         )} />
                                     </Link>
@@ -163,13 +166,13 @@ export function Header() {
                                         key={item.path}
                                         to={item.path}
                                         className={cn(
-                                            "text-sm font-medium transition-all duration-200 hover:text-primary relative group py-2",
-                                            location.pathname === item.path ? "text-primary" : "text-muted-foreground/80"
+                                            "text-[15px] font-semibold transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] relative group py-2",
+                                            location.pathname === item.path ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" : "text-zinc-300"
                                         )}
                                     >
                                         {item.name}
                                         <span className={cn(
-                                            "absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left",
+                                            "absolute bottom-0 left-0 w-full h-[2px] bg-emerald-400 scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left shadow-[0_0_8px_rgba(52,211,153,0.8)]",
                                             location.pathname === item.path && "scale-x-100"
                                         )} />
                                     </Link>
@@ -179,10 +182,10 @@ export function Header() {
                                 href="https://bch-intents-docs.vercel.app/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-medium text-muted-foreground/80 transition-all duration-200 hover:text-primary relative group py-2"
+                                className="text-[15px] font-semibold text-zinc-300 transition-all duration-300 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] relative group py-2"
                             >
                                 Docs
-                                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-primary scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left" />
+                                <span className="absolute bottom-0 left-0 w-full h-[2px] bg-emerald-400 scale-x-0 transition-transform duration-300 group-hover:scale-x-100 origin-left shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                             </a>
                         </nav>
                     </div>
@@ -208,16 +211,16 @@ export function Header() {
                 {/* Right Section: Social Icons for Landing OR Actions for App */}
                 {isLandingPage ? (
                     <div className="hidden md:flex items-center gap-3 shrink-0">
-                        <a href="https://x.com/intents_swap" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                        <a href="https://x.com/intents_swap" target="_blank" rel="noopener noreferrer" className="glass-subtle w-10 h-10 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                             <XIcon />
                         </a>
-                        <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                        <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="glass-subtle w-10 h-10 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                             <BookOpen className="w-4 h-4" />
                         </a>
-                        <a href="https://medium.com/@bchintents" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                        <a href="https://medium.com/@bchintents" target="_blank" rel="noopener noreferrer" className="glass-subtle w-10 h-10 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                             <MediumIcon />
                         </a>
-                        <a href="#" target="_blank" rel="noopener noreferrer" className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                        <a href="#" target="_blank" rel="noopener noreferrer" className="glass-subtle w-10 h-10 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                             <DiscordIcon />
                         </a>
                     </div>
@@ -229,19 +232,42 @@ export function Header() {
                                 <ConnectWalletButton />
                             </div>
                         </div>
-                        {/* Wallet Popup Trigger */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn(
-                                "h-9 w-9 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-all",
-                                walletPopupOpen && "bg-primary/10 border-primary/30 text-primary",
-                                anyWalletConnected && !walletPopupOpen && "border-emerald-500/50 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse-glow"
-                            )}
-                            onClick={() => setWalletPopupOpen(v => !v)}
-                        >
-                            <Wallet className="h-4 w-4" />
-                        </Button>
+                        {/* Wallet Popup Trigger with static blazing ring */}
+                        <div className="relative group">
+                            {/* Static conic-gradient ring (same palette as Trade button) */}
+                            <div
+                                className={cn(
+                                    "absolute -inset-[2px] rounded-xl overflow-hidden transition-opacity duration-300",
+                                    anyWalletConnected || walletPopupOpen ? "opacity-100" : "opacity-40 group-hover:opacity-80"
+                                )}
+                            >
+                                <div
+                                    style={{
+                                        background: "conic-gradient(from 180deg, #10b981, #22c55e, #eab308, #f59e0b, #10b981)",
+                                    }}
+                                    className="absolute inset-0"
+                                />
+                                <div className="absolute inset-[2px] rounded-[10px] bg-[#050505]" />
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    "relative h-9 w-9 rounded-lg bg-transparent hover:bg-white/5 transition-all border-none",
+                                    walletPopupOpen && "bg-white/5"
+                                )}
+                                onClick={() => setWalletPopupOpen(v => !v)}
+                            >
+                                <Wallet className={cn(
+                                    "h-4 w-4 transition-colors duration-300",
+                                    anyWalletConnected
+                                        ? "text-emerald-400"
+                                        : walletPopupOpen
+                                            ? "text-emerald-400/80"
+                                            : "text-muted-foreground group-hover:text-emerald-400/60"
+                                )} />
+                            </Button>
+                        </div>
                     </div>
                 )}
 
@@ -269,12 +295,12 @@ export function Header() {
                                                     to={item.path}
                                                     onClick={() => setIsOpen(false)}
                                                     className={cn(
-                                                        "text-xl font-medium transition-colors hover:text-primary flex items-center justify-between group",
-                                                        location.pathname === item.path ? "text-primary" : "text-muted-foreground"
+                                                        "text-2xl font-bold transition-all hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-between group hover:translate-x-2",
+                                                        location.pathname === item.path ? "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]" : "text-zinc-400"
                                                     )}
                                                 >
                                                     {item.name}
-                                                    <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                                    <ChevronDown className="-rotate-90 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all text-emerald-400 group-hover:translate-x-1" />
                                                 </Link>
                                             )
                                         ))}
@@ -283,10 +309,10 @@ export function Header() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={() => setIsOpen(false)}
-                                            className="text-xl font-medium transition-colors hover:text-primary flex items-center justify-between group text-muted-foreground"
+                                            className="text-2xl font-bold transition-all hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-between group text-zinc-400 hover:translate-x-2"
                                         >
                                             Docs
-                                            <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                            <ChevronDown className="-rotate-90 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all text-emerald-400 group-hover:translate-x-1" />
                                         </a>
                                     </>
                                 ) : (
@@ -294,16 +320,16 @@ export function Header() {
                                         {[...appPrimaryNavItems, ...appDropdownItems].map((item) => (
                                             item.name === 'Trade' ? (
                                                 <div key={item.path} className="flex flex-col gap-2">
-                                                    <div className="text-xl font-medium text-primary flex items-center justify-between group">
+                                                    <div className="text-2xl font-bold text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-between group">
                                                         {item.name}
                                                     </div>
-                                                    <div className="flex flex-col gap-3 pl-4 border-l-2 border-primary/20 mt-2">
+                                                    <div className="flex flex-col gap-4 pl-4 border-l-2 border-emerald-500/30 mt-4">
                                                         {tradeDropdownItems.map((subItem) => (
                                                             <Link
                                                                 key={subItem.path}
                                                                 to={subItem.path}
                                                                 onClick={() => setIsOpen(false)}
-                                                                className="text-lg text-muted-foreground hover:text-primary transition-colors"
+                                                                className="text-xl font-semibold text-zinc-400 hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all hover:translate-x-1"
                                                             >
                                                                 {subItem.name}
                                                             </Link>
@@ -316,12 +342,12 @@ export function Header() {
                                                     to={item.path}
                                                     onClick={() => setIsOpen(false)}
                                                     className={cn(
-                                                        "text-xl font-medium transition-colors hover:text-primary flex items-center justify-between group",
-                                                        location.pathname === item.path ? "text-primary" : "text-muted-foreground"
+                                                        "text-2xl font-bold transition-all hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-between group hover:translate-x-2",
+                                                        location.pathname === item.path ? "text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]" : "text-zinc-400"
                                                     )}
                                                 >
                                                     {item.name}
-                                                    <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                                    <ChevronDown className="-rotate-90 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all text-emerald-400 group-hover:translate-x-1" />
                                                 </Link>
                                             )
                                         ))}
@@ -330,10 +356,10 @@ export function Header() {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={() => setIsOpen(false)}
-                                            className="text-xl font-medium transition-colors hover:text-primary flex items-center justify-between group text-muted-foreground"
+                                            className="text-2xl font-bold transition-all hover:text-white hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.4)] flex items-center justify-between group text-zinc-400 hover:translate-x-2"
                                         >
                                             Docs
-                                            <ChevronDown className="-rotate-90 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+                                            <ChevronDown className="-rotate-90 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all text-emerald-400 group-hover:translate-x-1" />
                                         </a>
                                     </>
                                 )}
@@ -345,37 +371,50 @@ export function Header() {
                                         <div className="flex-1">
                                             <ConnectWalletButton className="w-full h-12 text-lg rounded-xl" />
                                         </div>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className={cn(
-                                                "h-12 w-12 shrink-0 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all",
-                                                walletPopupOpen && "bg-primary/10 border-primary/30 text-primary",
-                                                anyWalletConnected && !walletPopupOpen && "border-emerald-500/50 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse-glow"
-                                            )}
-                                            onClick={() => {
-                                                setIsOpen(false);
-                                                setWalletPopupOpen(true);
-                                            }}
-                                        >
-                                            <Wallet className="h-5 w-5" />
-                                        </Button>
+                                        <div className="relative group">
+                                            <div className="absolute -inset-[2px] rounded-xl overflow-hidden">
+                                                <div
+                                                    style={{
+                                                        background: "conic-gradient(from 180deg, #10b981, #22c55e, #eab308, #f59e0b, #10b981)",
+                                                    }}
+                                                    className="absolute inset-0"
+                                                />
+                                                <div className="absolute inset-[2px] rounded-[10px] bg-[#050505]" />
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className={cn(
+                                                    "relative h-12 w-12 shrink-0 rounded-xl bg-transparent hover:bg-white/5 transition-all border-none",
+                                                    walletPopupOpen && "bg-white/5"
+                                                )}
+                                                onClick={() => {
+                                                    setIsOpen(false);
+                                                    setWalletPopupOpen(true);
+                                                }}
+                                            >
+                                                <Wallet className={cn(
+                                                    "h-5 w-5 transition-colors duration-300",
+                                                    anyWalletConnected ? "text-emerald-400" : "text-muted-foreground"
+                                                )} />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             {isLandingPage && (
                                 <div className="pt-8 border-t border-white/10 flex gap-4 justify-center">
-                                    <a href="https://x.com/intents_swap" target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                                    <a href="https://x.com/intents_swap" target="_blank" rel="noopener noreferrer" className="glass-subtle w-12 h-12 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                                         <XIcon />
                                     </a>
-                                    <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                                    <a href="https://bch-intents-docs.vercel.app/" target="_blank" rel="noopener noreferrer" className="glass-subtle w-12 h-12 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                                         <BookOpen className="w-5 h-5" />
                                     </a>
-                                    <a href="https://medium.com/@bchintents" target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                                    <a href="https://medium.com/@bchintents" target="_blank" rel="noopener noreferrer" className="glass-subtle w-12 h-12 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                                         <MediumIcon />
                                     </a>
-                                    <a href="#" target="_blank" rel="noopener noreferrer" className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors border border-white/10">
+                                    <a href="#" target="_blank" rel="noopener noreferrer" className="glass-subtle w-12 h-12 flex items-center justify-center rounded-2xl text-zinc-400 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group hover:-translate-y-1">
                                         <DiscordIcon />
                                     </a>
                                 </div>

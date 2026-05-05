@@ -9,7 +9,7 @@
  * - Full light/dark mode support
  */
 
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Twitter, Github, BookOpen, Zap, ArrowUpRight, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -95,6 +95,9 @@ function FooterLink({ label, href, external }: FooterLinkProps) {
 }
 
 export function Footer() {
+    const location = useLocation();
+    const isLandingPage = ['/', '/home', '/ecosystem', '/integrate'].includes(location.pathname);
+
     return (
         <footer className="relative border-t border-border/40 mt-auto overflow-hidden">
             {/* Gradient Mesh Background */}
@@ -107,16 +110,14 @@ export function Footer() {
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8">
                         {/* Brand Column */}
                         <div className="lg:col-span-2 space-y-6">
-                            <Link to="/" className="flex items-center gap-3 group">
-                                <div className={cn(
-                                    "w-10 h-10 rounded-xl bg-primary flex items-center justify-center",
-                                    "group-hover:scale-110 transition-transform duration-300",
-                                    "shadow-lg shadow-primary/30"
-                                )}>
-                                    <Zap className="w-5 h-5 text-primary-foreground" />
-                                </div>
+                            <Link to="/" className="flex items-center group">
+                                <img
+                                    src="/assets/bchintentslogo.png"
+                                    alt="BCH Intents Protocol Logo"
+                                    className="w-20 h-20 -ml-3 -mr-4 object-contain transition-transform group-hover:scale-110 duration-300"
+                                />
                                 <span className="font-heading font-bold text-xl tracking-tight">
-                                    BCH <span className="text-primary">Intents</span>
+                                    BCH <span className="text-primary">Intents Protocol</span>
                                 </span>
                             </Link>
 
@@ -196,7 +197,7 @@ export function Footer() {
                             Built on
                         </span>
                         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-muted/50 text-xs font-medium">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <img src="/logos/bitcoin-cash-bch-logo.svg" alt="BCH" className="w-4 h-4" />
                             Bitcoin Cash
                         </span>
                     </div>
